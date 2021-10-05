@@ -3,7 +3,7 @@ import argparse
 
 import pandas as pd
 
-from config import DEFAULT_DATASET_PATH, DEFAULT_TEST_SPLIT_RATIO
+from tiltify.config import DEFAULT_DATASET_PATH, DEFAULT_TEST_SPLIT_RATIO
 
 
 def get_cli_args() -> argparse.Namespace:
