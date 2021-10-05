@@ -1,5 +1,5 @@
 # default global variables
-DEFAULT_DATASET_PATH = "test1.csv"
+DEFAULT_DATASET_PATH = "sentence_data.csv"
 EVAL_RESULT_PATH = "eval.csv"
 
 BASE_BERT_MODEL = "bert-base-uncased"
