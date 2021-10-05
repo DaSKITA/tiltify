@@ -5,6 +5,8 @@ from torch.utils.data import Dataset, Subset
 from torch import Tensor
 from transformers import BertTokenizer, BatchEncoding
 
+from tiltify.config import LABEL_REPLACE
+
 
 class TiltDataset(Dataset):
     """
@@ -48,9 +50,11 @@ class TiltDataset(Dataset):
 
         # add target values if existent
         try:
-            self.labels = Tensor(data['labels'])
+            label_data = [LABEL_REPLACE[entry] for entry in data['labels']]
+            self.labels = Tensor(label_data).long()
         except KeyError:
             self.labels = None
+            print('KeyError in labels creation')
 
     def __len__(self) -> int:
         """returns the length of the dataset"""

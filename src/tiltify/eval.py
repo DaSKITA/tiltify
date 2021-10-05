@@ -4,9 +4,9 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import BertForSequenceClassification
 
-from data import get_dataset
-from utils import get_cli_args, save_predictions
-from config import DEFAULT_DATASET_PATH, EVAL_RESULT_PATH, BASE_BERT_MODEL, FINETUNED_BERT_MODEL_PATH
+from tiltify.data import get_dataset
+from tiltify.utils import get_cli_args, save_predictions
+from tiltify.config import DEFAULT_DATASET_PATH, EVAL_RESULT_PATH, BASE_BERT_MODEL, FINETUNED_BERT_MODEL_PATH
 
 
 def make_predictions(test_dl: DataLoader, model: BertForSequenceClassification) -> List:
