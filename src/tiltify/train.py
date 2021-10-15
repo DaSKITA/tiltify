@@ -43,11 +43,6 @@ def finetune_and_evaluate_model(model: BertForSequenceClassification, dataset: T
         a huggingface transformers BERT sequence classification
         object that is fine-tuned using the dataset
     """
-    try:
-        device = dataset.device
-        print(f'DATASET DEVICE IS: {device}')
-    except:
-        print(f'DATASET DEVICE NOT FOUND')
     if test_split_ratio:
         train_ds, test_ds = get_train_test_split(dataset, test_split_ratio)
         train_ft_ds = TiltFinetuningDataset(train_ds)
@@ -78,7 +73,6 @@ def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_rati
     # load the dataset
     print(f"Loading dataset from '{dataset_file_path}' ...")
     dataset = get_dataset(dataset_file_path, BASE_BERT_MODEL)
-    dataset.to(device)
 
     # load the base model to be fine-tuned
     print(f"Loading base model ...")
