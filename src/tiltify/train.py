@@ -13,12 +13,12 @@ from tiltify.config import BASE_BERT_MODEL, DEFAULT_DATASET_PATH, DEFAULT_TEST_S
 def get_train_test_split(dataset: TiltDataset, n_test: float) -> Tuple[Subset, Subset]:
     """Get a train/test split for the given dataset
 
-        Parameters
-        ----------
-        dataset : TiltDataset
-            a dataset containing tokenized sentences
-        n_test : float
-            the ratio of the items in the dataset to be used for evaluation
+    Parameters
+    ----------
+    dataset : TiltDataset
+        a dataset containing tokenized sentences
+    n_test : float
+        the ratio of the items in the dataset to be used for evaluation
     """
 
     # determine sizes
@@ -33,15 +33,15 @@ def get_train_test_split(dataset: TiltDataset, n_test: float) -> Tuple[Subset, S
 def finetune_and_evaluate_model(model: BertForSequenceClassification, dataset: TiltDataset,
                                 test_split_ratio: float = None):
     """Fine-tune (and evaluate) model using the given dataset.
-        Uses the Trainer API of the transformers library.
+    Uses the Trainer API of the transformers library.
 
-        Parameters
-        ----------
-        dataset : TiltDataset
-            a dataset containing tokenized sentences
-        model : BertForSequenceClassification
-            a huggingface transformers BERT sequence classification
-            object that is fine-tuned using the dataset
+    Parameters
+    ----------
+    dataset : TiltDataset
+        a dataset containing tokenized sentences
+    model : BertForSequenceClassification
+        a huggingface transformers BERT sequence classification
+        object that is fine-tuned using the dataset
     """
     if test_split_ratio:
         train_ds, test_ds = get_train_test_split(dataset, test_split_ratio)
@@ -64,7 +64,8 @@ def finetune_and_evaluate_model(model: BertForSequenceClassification, dataset: T
     model.save_pretrained(FINETUNED_BERT_MODEL_PATH)
 
 
-def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_ratio: float = DEFAULT_TEST_SPLIT_RATIO):
+def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_ratio: float = DEFAULT_TEST_SPLIT_RATIO)\
+        -> BertForSequenceClassification:
     # load the dataset
     print(f"Loading dataset from '{dataset_file_path}' ...")
     dataset = get_dataset(dataset_file_path, BASE_BERT_MODEL)
@@ -79,6 +80,8 @@ def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_rati
     print(f"Fine-tuning model...")
     finetune_and_evaluate_model(model, dataset, test_split_ratio)
     print(f"Fine-tuned model saved to '{FINETUNED_BERT_MODEL_PATH}'.")
+
+    return model
 
 
 if __name__ == "__main__":
