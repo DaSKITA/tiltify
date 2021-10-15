@@ -1,8 +1,8 @@
 # default global variables
-DEFAULT_DATASET_PATH = "/Users/farazo/Documents/DaSKITA/playground/tiltify/data/sentence_data.csv"
+DEFAULT_DATASET_PATH = "/Users/farazo/Documents/DaSKITA/playground/tiltify/data/de_sentence_data.csv"
 EVAL_RESULT_PATH = "eval.csv"
 
-BASE_BERT_MODEL = "bert-base-uncased"
+BASE_BERT_MODEL = "dbmdz/bert-base-german-cased"
 FINETUNED_BERT_MODEL_PATH = "model/bert-finetuned"
 
 DEFAULT_TEST_SPLIT_RATIO = 0.33
