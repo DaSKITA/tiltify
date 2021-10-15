@@ -43,6 +43,11 @@ def finetune_and_evaluate_model(model: BertForSequenceClassification, dataset: T
         a huggingface transformers BERT sequence classification
         object that is fine-tuned using the dataset
     """
+    try:
+        device = dataset.device
+        print(f'DATASET DEVICE IS: {device}')
+    except:
+        print(f'DATASET DEVICE NOT FOUND')
     if test_split_ratio:
         train_ds, test_ds = get_train_test_split(dataset, test_split_ratio)
         train_ft_ds = TiltFinetuningDataset(train_ds)
@@ -54,8 +59,9 @@ def finetune_and_evaluate_model(model: BertForSequenceClassification, dataset: T
     training_args = TrainingArguments("finetune_trainer",
                                       evaluation_strategy="epoch",
                                       logging_strategy="epoch",
-                                      per_device_train_batch_size=16,
-                                      per_device_eval_batch_size=16)
+                                      per_device_train_batch_size=32,
+                                      per_device_eval_batch_size=32,
+                                      num_train_epochs=10)
 
     trainer = Trainer(model=model, args=training_args, train_dataset=train_ft_ds, eval_dataset=test_ft_ds)
     trainer.train()
@@ -66,14 +72,19 @@ def finetune_and_evaluate_model(model: BertForSequenceClassification, dataset: T
 
 def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_ratio: float = DEFAULT_TEST_SPLIT_RATIO)\
         -> BertForSequenceClassification:
+    # check for GPU
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
     # load the dataset
     print(f"Loading dataset from '{dataset_file_path}' ...")
     dataset = get_dataset(dataset_file_path, BASE_BERT_MODEL)
+    dataset.to(device)
 
     # load the base model to be fine-tuned
     print(f"Loading base model ...")
     # 'num_labels = 6' for classification task
     model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=6)
+    model.to(device)
     print(f"Model loaded!")
 
     # fine-tune the model and evaluate each epoch if test split is given
