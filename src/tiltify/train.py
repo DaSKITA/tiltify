@@ -12,8 +12,9 @@ from tiltify.config import BASE_BERT_MODEL, DEFAULT_DATASET_PATH, DEFAULT_TEST_S
 
 
 def compute_metrics(pred):
+    labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
-    precision, recall, f1, _ = precision_recall_fscore_support([1, 2, 3, 4, 5], preds, average='macro')
+    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, labels=[1, 2, 3, 4, 5], average='macro')
     return {
         'f1': f1,
         'precision': precision,
