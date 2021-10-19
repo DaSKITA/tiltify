@@ -1,6 +1,7 @@
 from typing import Tuple
 
 import torch
+from sklearn.metrics import precision_recall_fscore_support
 from torch.utils.data import Subset, random_split
 from transformers import BertForSequenceClassification, Trainer, TrainingArguments
 
@@ -8,6 +9,17 @@ from tiltify.data import TiltDataset, TiltFinetuningDataset, get_dataset
 from tiltify.utils import get_cli_args
 from tiltify.config import BASE_BERT_MODEL, DEFAULT_DATASET_PATH, DEFAULT_TEST_SPLIT_RATIO,\
     FINETUNED_BERT_MODEL_PATH, RANDOM_SPLIT_SEED
+
+
+def compute_metrics(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
+    return {
+        'f1': f1,
+        'precision': precision,
+        'recall': recall
+    }
 
 
 def get_train_test_split(dataset: TiltDataset, n_test: float) -> Tuple[Subset, Subset]:
@@ -58,7 +70,11 @@ def finetune_and_evaluate_model(model: BertForSequenceClassification, dataset: T
                                       per_device_eval_batch_size=32,
                                       num_train_epochs=10)
 
-    trainer = Trainer(model=model, args=training_args, train_dataset=train_ft_ds, eval_dataset=test_ft_ds)
+    trainer = Trainer(model=model,
+                      args=training_args,
+                      train_dataset=train_ft_ds,
+                      eval_dataset=test_ft_ds,
+                      compute_metrics=compute_metrics)
     trainer.train()
     trainer.evaluate()
 
@@ -90,23 +106,23 @@ def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_rati
 
 
 if __name__ == "__main__":
-    # gather command line arguments
-    cli_args = get_cli_args()
-    dataset_file_path = cli_args.input
-    test_split_ratio = float(cli_args.test_split)
+    # check for GPU
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # load the dataset
-    print(f"Loading dataset from '{dataset_file_path}' ...")
-    dataset = get_dataset(dataset_file_path, BASE_BERT_MODEL)
+    print(f"Loading dataset from '{DEFAULT_DATASET_PATH}' ...")
+    dataset = get_dataset(DEFAULT_DATASET_PATH, BASE_BERT_MODEL)
+
     # load the base model to be fine-tuned
     print(f"Loading base model ...")
-    # 'num_labels = 1' for regression task
-    model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=1)
+    # 'num_labels = 6' for classification task
+    model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=6)
+    model.to(device)
     print(f"Model loaded!")
 
     # fine-tune the model and evaluate each epoch if test split is given
     print(f"Fine-tuning model...")
-    finetune_and_evaluate_model(model, dataset, test_split_ratio)
+    finetune_and_evaluate_model(model, dataset, DEFAULT_TEST_SPLIT_RATIO)
     print(f"Fine-tuned model saved to '{FINETUNED_BERT_MODEL_PATH}'.")
 
 
