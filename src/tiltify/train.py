@@ -25,7 +25,7 @@ def precision_recall_fscore_metric(pred):
 def classification_report_metric(pred):
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
-    return classification_report(labels, preds)
+    return classification_report(labels, preds, output_dict=True)
 
 
 def get_train_test_split(dataset: TiltDataset, n_test: float) -> Tuple[Subset, Subset]:
