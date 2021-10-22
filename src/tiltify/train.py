@@ -88,7 +88,7 @@ def finetune_and_evaluate_model(model: BertForSequenceClassification, dataset: T
 
 
 def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_ratio: float = DEFAULT_TEST_SPLIT_RATIO,
-                  metric_func_str: str = 'frp') -> BertForSequenceClassification:
+                  metric_func_str: str = 'frp', freeze_layer_count: int = None) -> BertForSequenceClassification:
     # check for GPU
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -100,6 +100,19 @@ def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_rati
     print(f"Loading base model ...")
     # 'num_labels = 6' for classification task
     model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=6)
+
+    if freeze_layer_count:
+        # We freeze here the embeddings of the model
+        for param in model.bert.embeddings.parameters():
+            param.requires_grad = False
+
+        if freeze_layer_count != -1:
+            # if freeze_layer_count == -1, we only freeze the embedding layer
+            # otherwise we freeze the first `freeze_layer_count` encoder layers
+            for layer in model.bert.encoder.layer[:freeze_layer_count]:
+                for param in layer.parameters():
+                    param.requires_grad = False
+
     model.to(device)
     print(f"Model loaded!")
 
