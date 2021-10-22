@@ -1,7 +1,7 @@
-from typing import Tuple
+from typing import Callable, Tuple
 
 import torch
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import classification_report, precision_recall_fscore_support
 from torch.utils.data import Subset, random_split
 from transformers import BertForSequenceClassification, Trainer, TrainingArguments
 
@@ -11,7 +11,7 @@ from tiltify.config import BASE_BERT_MODEL, DEFAULT_DATASET_PATH, DEFAULT_TEST_S
     FINETUNED_BERT_MODEL_PATH, RANDOM_SPLIT_SEED
 
 
-def compute_metrics(pred):
+def precision_recall_fscore_metric(pred):
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
     precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='macro')
@@ -20,6 +20,12 @@ def compute_metrics(pred):
         'precision': precision,
         'recall': recall
     }
+
+
+def classification_report_metric(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+    return classification_report(labels, preds)
 
 
 def get_train_test_split(dataset: TiltDataset, n_test: float) -> Tuple[Subset, Subset]:
@@ -43,7 +49,7 @@ def get_train_test_split(dataset: TiltDataset, n_test: float) -> Tuple[Subset, S
 
 
 def finetune_and_evaluate_model(model: BertForSequenceClassification, dataset: TiltDataset,
-                                test_split_ratio: float = None):
+                                metric_func: Callable, test_split_ratio: float = None):
     """Fine-tune (and evaluate) model using the given dataset.
     Uses the Trainer API of the transformers library.
 
@@ -74,15 +80,15 @@ def finetune_and_evaluate_model(model: BertForSequenceClassification, dataset: T
                       args=training_args,
                       train_dataset=train_ft_ds,
                       eval_dataset=test_ft_ds,
-                      compute_metrics=compute_metrics)
+                      compute_metrics=metric_func)
     trainer.train()
     trainer.evaluate()
 
     model.save_pretrained(FINETUNED_BERT_MODEL_PATH)
 
 
-def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_ratio: float = DEFAULT_TEST_SPLIT_RATIO)\
-        -> BertForSequenceClassification:
+def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_ratio: float = DEFAULT_TEST_SPLIT_RATIO,
+                  metric_func_str: str = 'frp') -> BertForSequenceClassification:
     # check for GPU
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -99,30 +105,19 @@ def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_rati
 
     # fine-tune the model and evaluate each epoch if test split is given
     print(f"Fine-tuning model...")
-    finetune_and_evaluate_model(model, dataset, test_split_ratio)
+
+    metric_func = {
+        'frp': precision_recall_fscore_metric(),
+        'cr': classification_report_metric()
+    }[metric_func_str]
+
+    finetune_and_evaluate_model(model, dataset, metric_func, test_split_ratio)
     print(f"Fine-tuned model saved to '{FINETUNED_BERT_MODEL_PATH}'.")
 
     return model
 
 
 if __name__ == "__main__":
-    # check for GPU
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
-    # load the dataset
-    print(f"Loading dataset from '{DEFAULT_DATASET_PATH}' ...")
-    dataset = get_dataset(DEFAULT_DATASET_PATH, BASE_BERT_MODEL)
-
-    # load the base model to be fine-tuned
-    print(f"Loading base model ...")
-    # 'num_labels = 6' for classification task
-    model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=6)
-    model.to(device)
-    print(f"Model loaded!")
-
-    # fine-tune the model and evaluate each epoch if test split is given
-    print(f"Fine-tuning model...")
-    finetune_and_evaluate_model(model, dataset, DEFAULT_TEST_SPLIT_RATIO)
-    print(f"Fine-tuned model saved to '{FINETUNED_BERT_MODEL_PATH}'.")
+    default_train()
 
 
