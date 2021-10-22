@@ -107,8 +107,8 @@ def default_train(dataset_file_path: str = DEFAULT_DATASET_PATH, test_split_rati
     print(f"Fine-tuning model...")
 
     metric_func = {
-        'frp': precision_recall_fscore_metric(),
-        'cr': classification_report_metric()
+        'frp': precision_recall_fscore_metric,
+        'cr': classification_report_metric
     }[metric_func_str]
 
     finetune_and_evaluate_model(model, dataset, metric_func, test_split_ratio)
