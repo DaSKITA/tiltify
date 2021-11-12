@@ -12,6 +12,7 @@ The goal is to infer TILT Labels for a given privacy policy and thus perform aut
 
 A set of Ideas is gathered here:
 [Ideas](https://hackmd.io/@elysias/HkzMVMAGK)
+[Annotation Review](https://hackmd.io/@elysias/H1ykQx2Pt/edit)
 
 
 ## Project Structure
