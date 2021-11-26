@@ -22,3 +22,12 @@ A set of Ideas is gathered here:
 `/experiments` - stores scripts used for fast experimentation
 
 `/src` - stores the package "tiltify" which shall be installed and used for experimentation
+
+
+## SetUp
+
+### Application StartUp
+
+### Development
+
+#### Requirements
