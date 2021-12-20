@@ -17,6 +17,11 @@ class Blob:
         self.text = text
         self.annotations = []
 
+    def __eq__(self, other):
+        if self.text == other.text and self.annotations == other.annotations:
+            return True
+        return False
+
     def add_annotation(self, annotation: Union[Annotation, List[Annotation]]):
         if isinstance(annotation, list):
             self.annotations += annotation

@@ -1,6 +1,6 @@
-gdown
 pandas
 torch
 transformers
 sklearn
 spacy
+pytest

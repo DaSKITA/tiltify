@@ -5,5 +5,5 @@ from tiltify.data_structures.document import Document
 class Parser(ABC):
 
     @abstractmethod
-    def parse(self, text: str) -> Document:
+    def parse(self, title: str, text: str) -> Document:
         pass
