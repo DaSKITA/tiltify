@@ -20,11 +20,6 @@ class Document:
         else:
             self.blobs = []
 
-    def __eq__(self, other):
-        if self.title == other.title and self.blobs == other.blobs:
-            return True
-        return False
-
     def add_blob(self, blob: Union[Blob, List[Blob]]):
         if isinstance(blob, list):
             self.blobs += blob
