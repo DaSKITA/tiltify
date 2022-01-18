@@ -20,7 +20,7 @@ class PolicyParser(Parser):
         for blob in blobs_raw:
             blob_annotations = []
             blob_start = len(text.split(blob)[0]) + 1
-            blob_end = blob_start + len(blob)
+            blob_end = blob_start + len(blob) - 1
             for annotation in annotations:
                 # gather annotations that belong to the current blob
                 if blob_start <= annotation['annotation_start'] <= blob_end or \
