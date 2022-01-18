@@ -1,4 +1,5 @@
 from typing import List, Union
+
 from tiltify.data_structures.blob import Blob
 
 
@@ -21,6 +22,6 @@ class Document:
 
     def add_blob(self, blob: Union[Blob, List[Blob]]):
         if isinstance(blob, list):
-            self.slobs += blob
+            self.blobs += blob
         else:
-            self.annotations.append(blob)
+            self.blobs.append(blob)
