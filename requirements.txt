@@ -1,6 +1,6 @@
-gdown
-pandas
-torch
-transformers
-sklearn
-spacy
+pandas==1.3.3
+pytest==6.2.5
+sklearn==0.0
+spacy==3.1.3
+torch==1.9.1
+transformers==4.11.2
