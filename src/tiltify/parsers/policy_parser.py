@@ -6,14 +6,28 @@ from tiltify.data_structures.blob import Blob
 from tiltify.data_structures.document import Document
 
 
+class ParserFilter:
+
+    def __init__(self, symbols: List[str] = None) -> None:
+        self.filter_list = ['\t', '\b']
+        if symbols:
+            self.filter_list.append(symbols)
+        pass
+
+    def filter(self, text: str) -> str:
+        for symbols in self.filter_list:
+            text.replace(symbols, '')
+        return text
+
+
 class PolicyParser(Parser):
 
     def __init__(self) -> None:
-        pass
+        self.filter = ParserFilter()
 
     def parse(self, title: str, text: str, annotations: List) -> Document:
-        # TODO: more sophisticated pre-processing
-        blobs_raw = [blob for blob in text.split('\n') if blob != '']
+        processed_text = self.filter.filter(text)
+        blobs_raw = [blob for blob in processed_text.split('\n') if blob != '']
         blobs_annotated = []
 
         # iterate over all blobs and pair them with their annotations
