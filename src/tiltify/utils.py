@@ -2,6 +2,7 @@ from typing import List, Dict
 import argparse
 
 import pandas as pd
+from sklearn.metrics import classification_report, precision_recall_fscore_support
 
 from tiltify.config import DEFAULT_DATASET_PATH, DEFAULT_TEST_SPLIT_RATIO
 
