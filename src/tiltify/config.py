@@ -1,3 +1,4 @@
+from logging import root
 import os
 from pathlib import Path
 
@@ -19,3 +20,4 @@ class Path:
 
     root_path = os.path.abspath(Path(os.path.dirname(__file__)).parent.parent)
     policy_path = os.path.join(root_path, "data/official_policies")
+    DEFAULT_DATASET_PATH = os.path.join(root_path, "data/de_sentence_data.csv")
