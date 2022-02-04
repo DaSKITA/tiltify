@@ -2,8 +2,7 @@ import os
 from pathlib import Path
 
 # default global variables
-
-DEFAULT_DATASET_PATH = "/Users/farazo/Documents/DaSKITA/playground/tiltify/data/de_sentence_data.csv"
+DEFAULT_DATASET_PATH = Path("../../data/de_sentence_data.csv").resolve()
 EVAL_RESULT_PATH = "eval.csv"
 
 BASE_BERT_MODEL = "dbmdz/bert-base-german-cased"
