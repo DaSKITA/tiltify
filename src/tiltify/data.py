@@ -218,16 +218,23 @@ def get_train_test_split(dataset: TiltDataset, n_test: float) -> Tuple[Subset, S
     return train, test
 
 
-def get_finetuning_datasets(dataset_file_path: str, bert_base_model: str, test_split_ratio: float = 0.33) \
-        -> Tuple[TiltFinetuningDataset, TiltFinetuningDataset]:
+def get_finetuning_datasets(dataset_file_path: str, bert_base_model: str, split_ratio: float = 0.33, val: bool = False)\
+        -> Tuple[TiltFinetuningDataset, TiltFinetuningDataset, TiltFinetuningDataset]:
     dataset = get_dataset(dataset_file_path, bert_base_model)
 
-    if test_split_ratio:
-        train_ds, test_ds = get_train_test_split(dataset, test_split_ratio)
+    if split_ratio:
+        train_ds, val_test_ds = get_train_test_split(dataset, split_ratio)
         train_ft_ds = TiltFinetuningDataset(train_ds)
-        test_ft_ds = TiltFinetuningDataset(test_ds)
+        if val:
+            val_ds, test_ds = get_train_test_split(val_test_ds, 0.5)
+            val_ft_ds = TiltFinetuningDataset(val_ds)
+            test_ft_ds = TiltFinetuningDataset(test_ds)
+        else:
+            val_ft_ds = None
+            test_ft_ds = TiltFinetuningDataset(val_test_ds)
     else:
         train_ft_ds = TiltFinetuningDataset(dataset)
+        val_ft_ds = None
         test_ft_ds = None
 
-    return train_ft_ds, test_ft_ds
+    return train_ft_ds, val_ft_ds, test_ft_ds
