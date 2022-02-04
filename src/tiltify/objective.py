@@ -39,8 +39,8 @@ class BERTBinaryObjective(Objective):
         training_args = TrainingArguments("finetune_trainer",
                                           evaluation_strategy="epoch",
                                           logging_strategy="epoch",
-                                          per_device_train_batch_size=32,
-                                          per_device_eval_batch_size=32,
+                                          per_device_train_batch_size=2,
+                                          per_device_eval_batch_size=2,
                                           **self.hyperparameters)
 
         trainer = Trainer(model=self.model,
