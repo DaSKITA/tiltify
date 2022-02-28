@@ -1,6 +1,6 @@
 import os
 
-from tiltify.config import BASE_BERT_MODEL, DEFAULT_DATASET_PATH, DEFAULT_TEST_SPLIT_RATIO, Path
+from tiltify.config import BASE_BERT_MODEL, Path
 from tiltify.data import get_finetuning_datasets
 from tiltify.objective import BERTBinaryObjective
 from torch.multiprocessing import set_start_method

@@ -4,7 +4,7 @@ import argparse
 import pandas as pd
 from sklearn.metrics import classification_report, precision_recall_fscore_support
 
-from tiltify.config import DEFAULT_DATASET_PATH, DEFAULT_TEST_SPLIT_RATIO
+from tiltify.config import DEFAULT_TEST_SPLIT_RATIO, Path
 
 
 def get_cli_args() -> argparse.Namespace:
@@ -15,7 +15,7 @@ def get_cli_args() -> argparse.Namespace:
     """
 
     parser = argparse.ArgumentParser(description='Evaluate or train model on dataset.')
-    parser.add_argument('--input', default=DEFAULT_DATASET_PATH,
+    parser.add_argument('--input', default=Path.DEFAULT_DATASET_PATH,
                         help='path of the test data file')
     parser.add_argument('--test_split', default=DEFAULT_TEST_SPLIT_RATIO,
                         help='share of the dataset to be used as test data in case of training')
