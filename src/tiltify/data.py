@@ -36,7 +36,7 @@ class TiltDataset(Dataset):
         sentence at index idx
     """
 
-    def __init__(self, data):
+    def __init__(self, data, binary=False):
         """
         Parameters
         ----------
@@ -50,7 +50,10 @@ class TiltDataset(Dataset):
 
         # add target values if existent
         try:
-            label_data = [LABEL_REPLACE[entry] for entry in data['labels']]
+            if binary:
+                label_data = [0 if entry is None else 1 for entry in data['labels']]
+            else:
+                label_data = [LABEL_REPLACE[entry] for entry in data['labels']]
             self.labels = Tensor(label_data).long()
         except KeyError:
             self.labels = None
@@ -150,7 +153,7 @@ def tokenize_sentences(sentences: List[str], bert_base_model: str) -> BatchEncod
     return bert_tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
 
 
-def get_dataset(dataset_file_path: str, bert_base_model: str) -> TiltDataset:
+def get_dataset(dataset_file_path: str, bert_base_model: str, binary: bool) -> TiltDataset:
     """Loads a dataset file into a TiltDataset object.
     
     A given CSV dataset file is read and tokenized. The processed
@@ -164,7 +167,9 @@ def get_dataset(dataset_file_path: str, bert_base_model: str) -> TiltDataset:
         Check the README for more information
     bert_base_model : str
         specifies which huggingface transformers model is to be
-        used for the tokenization 
+        used for the tokenization
+    binary : bool
+        decides if the dataset classes should differentiate between different 'Right To's or not
     
     Returns
     -------
@@ -195,7 +200,7 @@ def get_dataset(dataset_file_path: str, bert_base_model: str) -> TiltDataset:
     if labels:
         test_data_dict['labels'] = labels
 
-    return TiltDataset(test_data_dict)
+    return TiltDataset(test_data_dict, binary=binary)
 
 
 def get_train_test_split(dataset: TiltDataset, n_test: float) -> Tuple[Subset, Subset]:
@@ -218,9 +223,10 @@ def get_train_test_split(dataset: TiltDataset, n_test: float) -> Tuple[Subset, S
     return train, test
 
 
-def get_finetuning_datasets(dataset_file_path: str, bert_base_model: str, split_ratio: float = 0.33, val: bool = False)\
-        -> Tuple[TiltFinetuningDataset, TiltFinetuningDataset, TiltFinetuningDataset]:
-    dataset = get_dataset(dataset_file_path, bert_base_model)
+def get_finetuning_datasets(dataset_file_path: str, bert_base_model: str, split_ratio: float = 0.33, val: bool = False,
+                            binary: bool = False) -> Tuple[TiltFinetuningDataset, TiltFinetuningDataset,
+                                                           TiltFinetuningDataset]:
+    dataset = get_dataset(dataset_file_path, bert_base_model, binary=binary)
 
     if split_ratio:
         train_ds, val_test_ds = get_train_test_split(dataset, split_ratio)
