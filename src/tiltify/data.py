@@ -1,11 +1,11 @@
-from typing import List, Dict, Union
+from typing import Dict, List, Tuple, Union
 
 import pandas as pd
-from torch.utils.data import Dataset, Subset
-from torch import Tensor
+from torch.utils.data import Dataset, Subset, random_split
+from torch import Generator, Tensor
 from transformers import BertTokenizer, BatchEncoding
 
-from tiltify.config import LABEL_REPLACE
+from tiltify.config import LABEL_REPLACE, RANDOM_SPLIT_SEED
 
 
 class TiltDataset(Dataset):
@@ -36,7 +36,7 @@ class TiltDataset(Dataset):
         sentence at index idx
     """
 
-    def __init__(self, data):
+    def __init__(self, data, binary=False):
         """
         Parameters
         ----------
@@ -50,7 +50,10 @@ class TiltDataset(Dataset):
 
         # add target values if existent
         try:
-            label_data = [LABEL_REPLACE[entry] for entry in data['labels']]
+            if binary:
+                label_data = [0 if entry is None else 1 for entry in data['labels']]
+            else:
+                label_data = [LABEL_REPLACE[entry] for entry in data['labels']]
             self.labels = Tensor(label_data).long()
         except KeyError:
             self.labels = None
@@ -150,11 +153,11 @@ def tokenize_sentences(sentences: List[str], bert_base_model: str) -> BatchEncod
     return bert_tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
 
 
-def get_dataset(dataset_file_path: str, bert_base_model: str) -> TiltDataset:
-    """Loads a dataset file into a DataLoader object.
+def get_dataset(dataset_file_path: str, bert_base_model: str, binary: bool) -> TiltDataset:
+    """Loads a dataset file into a TiltDataset object.
     
     A given CSV dataset file is read and tokenized. The processed
-    contents are then loaded into a pytorch DataLoader object,
+    contents are then loaded into a pytorch TiltDataset object,
     which is returned in the end. 
 
     Parameters
@@ -164,7 +167,9 @@ def get_dataset(dataset_file_path: str, bert_base_model: str) -> TiltDataset:
         Check the README for more information
     bert_base_model : str
         specifies which huggingface transformers model is to be
-        used for the tokenization 
+        used for the tokenization
+    binary : bool
+        decides if the dataset classes should differentiate between different 'Right To's or not
     
     Returns
     -------
@@ -195,5 +200,47 @@ def get_dataset(dataset_file_path: str, bert_base_model: str) -> TiltDataset:
     if labels:
         test_data_dict['labels'] = labels
 
-    return TiltDataset(test_data_dict)
+    return TiltDataset(test_data_dict, binary=binary)
 
+
+def get_train_test_split(dataset: TiltDataset, n_test: float) -> Tuple[Subset, Subset]:
+    """Get a train/test split for the given dataset
+
+    Parameters
+    ----------
+    dataset : TiltDataset
+        a dataset containing tokenized sentences
+    n_test : float
+        the ratio of the items in the dataset to be used for evaluation
+    """
+
+    # determine sizes
+    test_size = round(n_test * len(dataset))
+    train_size = len(dataset) - test_size
+    # calculate the split
+    train, test = random_split(dataset, [train_size, test_size],
+                               generator=Generator().manual_seed(RANDOM_SPLIT_SEED))
+    return train, test
+
+
+def get_finetuning_datasets(dataset_file_path: str, bert_base_model: str, split_ratio: float = 0.33, val: bool = False,
+                            binary: bool = False) -> Tuple[TiltFinetuningDataset, TiltFinetuningDataset,
+                                                           TiltFinetuningDataset]:
+    dataset = get_dataset(dataset_file_path, bert_base_model, binary=binary)
+
+    if split_ratio:
+        train_ds, val_test_ds = get_train_test_split(dataset, split_ratio)
+        train_ft_ds = TiltFinetuningDataset(train_ds)
+        if val:
+            val_ds, test_ds = get_train_test_split(val_test_ds, 0.5)
+            val_ft_ds = TiltFinetuningDataset(val_ds)
+            test_ft_ds = TiltFinetuningDataset(test_ds)
+        else:
+            val_ft_ds = None
+            test_ft_ds = TiltFinetuningDataset(val_test_ds)
+    else:
+        train_ft_ds = TiltFinetuningDataset(dataset)
+        val_ft_ds = None
+        test_ft_ds = None
+
+    return train_ft_ds, val_ft_ds, test_ft_ds
