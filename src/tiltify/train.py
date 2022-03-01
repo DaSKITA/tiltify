@@ -3,7 +3,7 @@ from tiltify.data import get_finetuning_datasets
 from tiltify.models import BinaryTiltifyBERT
 
 
-def default_train(dataset_file_path: str = Path.DEFAULT_DATASET_PATH, test_split_ratio: float = DEFAULT_TEST_SPLIT_RATIO,
+def default_train(dataset_file_path: str = Path.default_dataset_path, test_split_ratio: float = DEFAULT_TEST_SPLIT_RATIO,
                   metric_func_str: str = 'frp', freeze_layer_count: int = None) -> BinaryTiltifyBERT:
 
     # load the datasets

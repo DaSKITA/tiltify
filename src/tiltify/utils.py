@@ -15,7 +15,7 @@ def get_cli_args() -> argparse.Namespace:
     """
 
     parser = argparse.ArgumentParser(description='Evaluate or train model on dataset.')
-    parser.add_argument('--input', default=Path.DEFAULT_DATASET_PATH,
+    parser.add_argument('--input', default=Path.default_dataset_path,
                         help='path of the test data file')
     parser.add_argument('--test_split', default=DEFAULT_TEST_SPLIT_RATIO,
                         help='share of the dataset to be used as test data in case of training')
