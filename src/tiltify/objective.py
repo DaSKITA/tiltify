@@ -18,6 +18,7 @@ class BERTBinaryObjective(Objective):
                  test_dataset: TiltFinetuningDataset):
         super().__init__()
         self.train_dataset, self.val_dataset, self.test_dataset = train_dataset, val_dataset, test_dataset
+        self.labels = 2
 
     @staticmethod
     def _metric_func(pred):
@@ -33,7 +34,7 @@ class BERTBinaryObjective(Objective):
             num_train_epochs=trial.suggest_int("num_train_epochs", 1, 20)
         )
         # model setup
-        model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=2)
+        model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=self.labels)
         self.track_model(model, hyperparameters)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(device)
@@ -57,10 +58,10 @@ class BERTBinaryObjective(Objective):
 
     def test(self):
         testing_args = TrainingArguments("finetune_trainer",
-                                          evaluation_strategy="epoch",
-                                          logging_strategy="epoch",
-                                          per_device_train_batch_size=32,
-                                          per_device_eval_batch_size=32)
+                                         evaluation_strategy="epoch",
+                                         logging_strategy="epoch",
+                                         per_device_train_batch_size=32,
+                                         per_device_eval_batch_size=32)
 
         trainer = Trainer(model=self.model,
                           args=testing_args,
@@ -70,9 +71,15 @@ class BERTBinaryObjective(Objective):
         return trainer.evaluate()
 
 
-if __name__ == "__main__":
+class BERTRightToObjective(BERTBinaryObjective):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.labels = 6
+
+
+if __name__ == "__main__":
     train, val, test = get_finetuning_datasets(Path.default_dataset_path, BASE_BERT_MODEL, val=True)
     experiment = Experiment(experiment_path=os.path.abspath(''))
-    experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
+    experiment.add_objective(BERTRightToObjective, args=[train, val, test])
     experiment.run(k=2, trials=2, num_processes=1)
