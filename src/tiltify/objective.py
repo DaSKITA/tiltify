@@ -26,7 +26,7 @@ class BERTBinaryObjective(Objective):
         preds = pred.predictions.argmax(-1)
         metrics_handler = MetricsHandler()
         classification_metrics = metrics_handler.calculate_classification_metrics(labels, preds)
-        return classification_metrics['macro avg f1-score']
+        return classification_metrics
 
     def train(self, trial=None) -> Dict:
         hyperparameters = dict(
@@ -55,7 +55,7 @@ class BERTBinaryObjective(Objective):
 
         trainer.train()
         metrics = trainer.evaluate()
-        return metrics
+        return metrics['eval_macro avg f1-score']
 
     def test(self):
         testing_args = TrainingArguments("finetune_trainer",
@@ -80,7 +80,7 @@ class BERTRightToObjective(BERTBinaryObjective):
 
 
 if __name__ == "__main__":
-    train, val, test = get_finetuning_datasets(Path.default_dataset_path, BASE_BERT_MODEL, val=True)
+    train, val, test = get_finetuning_datasets(Path.default_dataset_path, BASE_BERT_MODEL, val=True, binary=True)
     experiment = Experiment(experiment_path=os.path.abspath(''))
     experiment.add_objective(BERTRightToObjective, args=[train, val, test])
-    experiment.run(k=2, trials=2, num_processes=1)
+    experiment.run(k=1, trials=1, num_processes=1)

@@ -139,14 +139,14 @@ def tokenize_sentences(sentences: List[str], bert_base_model: str) -> BatchEncod
         in this function
     bert_base_model : str
         specifies which huggingface transformers model is to be
-        used for the tokenization 
-    
+        used for the tokenization
+
     Returns
     -------
     BatchEncoding
         huggingface transformers data structure which contains
         the padded and tokenized sentences
-    
+
     """
 
     bert_tokenizer = BertTokenizer.from_pretrained(bert_base_model)
@@ -155,10 +155,10 @@ def tokenize_sentences(sentences: List[str], bert_base_model: str) -> BatchEncod
 
 def get_dataset(dataset_file_path: str, bert_base_model: str, binary: bool) -> TiltDataset:
     """Loads a dataset file into a TiltDataset object.
-    
+
     A given CSV dataset file is read and tokenized. The processed
     contents are then loaded into a pytorch TiltDataset object,
-    which is returned in the end. 
+    which is returned in the end.
 
     Parameters
     ----------
@@ -170,13 +170,13 @@ def get_dataset(dataset_file_path: str, bert_base_model: str, binary: bool) -> T
         used for the tokenization
     binary : bool
         decides if the dataset classes should differentiate between different 'Right To's or not
-    
+
     Returns
     -------
     TiltDataset
         dataset object which contains the padded and
         tokenized sentences
-    
+
     """
 
     df_dataset = pd.read_csv(dataset_file_path)
