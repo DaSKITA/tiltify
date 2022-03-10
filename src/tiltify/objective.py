@@ -84,3 +84,5 @@ if __name__ == "__main__":
     experiment = Experiment(experiment_path=os.path.abspath(''))
     experiment.add_objective(BERTRightToObjective, args=[train, val, test])
     experiment.run(k=1, trials=1, num_processes=1)
+
+# TODO: test ram with lower data - is huggingface throwing everything in gpu?
