@@ -51,7 +51,7 @@ class TiltDataset(Dataset):
         # add target values if existent
         try:
             if binary:
-                label_data = [0 if entry is None else 1 for entry in data['labels']]
+                label_data = [0 if entry == "None" else 1 for entry in data['labels']]
             else:
                 label_data = [LABEL_REPLACE[entry] for entry in data['labels']]
             self.labels = Tensor(label_data).long()
