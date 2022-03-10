@@ -19,3 +19,4 @@ class Path:
     root_path = os.path.abspath(Path(os.path.dirname(__file__)).parent.parent)
     policy_path = os.path.join(root_path, "data/official_policies")
     default_dataset_path = os.path.join(root_path, "data/de_sentence_data.csv")
+    experiment_path = os.path.join(root_path, "experiments")

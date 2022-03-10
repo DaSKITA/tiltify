@@ -31,7 +31,8 @@ class BERTBinaryObjective(Objective):
     def train(self, trial=None) -> Dict:
         hyperparameters = dict(
             learning_rate=trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True),
-            num_train_epochs=trial.suggest_int("num_train_epochs", 1, 20)
+            num_train_epochs=1,
+            weight_decay=trial.suggest_float("weight_decay", 1e-7, 1e-5, log=True),
         )
         # model setup
         model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=self.labels)
