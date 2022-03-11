@@ -16,10 +16,8 @@ def train_bert(binary):
     experiment = Experiment(experiment_path=os.path.abspath(''))
 
     if binary:
-        print("BINARY")
         experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
     else:
-        print("NON-BINARY")
         experiment.add_objective(BERTRightToObjective, args=[train, val, test])
 
     experiment.run(k=2, trials=2, num_processes=1)
