@@ -10,7 +10,8 @@ class DocumentCollection:
     data_loader = DataLoader()
 
     def __init__(self, documents: List[Document]) -> None:
-        """This class provides policies in form of an iterator. For later usage it is also possible
+        """This class provides policies in form of an iterator.
+        Every Policy is represented in a Document Class. For later usage it is also possible
         to adjust the loading of each individual document. Therefore the usage of an iterator is preferred.
 
         Args:
@@ -21,6 +22,14 @@ class DocumentCollection:
 
     @classmethod
     def from_json_files(cls, folder_name: str = "annotated_policies"):
+        """Creates a Document Collection from Json Policy files.
+
+        Args:
+            folder_name (str, optional): _description_. Defaults to "annotated_policies".
+
+        Returns:
+            _type_: _description_
+        """
         json_policies = cls.data_loader.get_json_data(folder_name)
         document_list = [cls.json_parser.parse(**json_policy["document"]) for json_policy in json_policies]
         return cls(document_list)
@@ -41,4 +50,9 @@ class DocumentCollection:
         return self.documents[key]
 
     def __iter__(self):
+        """Necessary to identify it as an Iterable.
+
+        Returns:
+            _type_: _description_
+        """
         return self
