@@ -1,3 +1,4 @@
+import argparse
 import os
 from typing import Dict
 
@@ -80,7 +81,19 @@ class BERTRightToObjective(BERTBinaryObjective):
 
 
 if __name__ == "__main__":
-    train, val, test = get_finetuning_datasets(Path.default_dataset_path, BASE_BERT_MODEL, val=True)
+    parser = argparse.ArgumentParser(description="You may choose to invoke binary classification.")
+    parser.add_argument("-b", "--binary", default=False, action="store_true",
+                        help="Using this argument invokes the binary classification of RightTo examples in general,\
+                        instead of classifying them distinctly.")
+    arguments = parser.parse_args()
+
+    train, val, test = get_finetuning_datasets(Path.default_dataset_path, BASE_BERT_MODEL, val=True,
+                                               binary=arguments.binary)
     experiment = Experiment(experiment_path=os.path.abspath(''))
-    experiment.add_objective(BERTRightToObjective, args=[train, val, test])
+
+    if arguments.binary:
+        experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
+    else:
+        experiment.add_objective(BERTRightToObjective, args=[train, val, test])
+
     experiment.run(k=2, trials=2, num_processes=1)
