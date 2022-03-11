@@ -12,7 +12,7 @@ from tiltify.config import Path
 
 @pytest.fixture
 def document_object():
-    with open(os.path.join(Path.root_path, 'data/test_data/carrefour_document_object.json'), 'r') as file:
+    with open(os.path.join(Path.root_path, 'data/test_data/document_object/carrefour_document_object.json'), 'r') as file:
         data = json.load(file)
     return data['document']['document_name'], [Blob(blob["text"],
                                                     [Annotation(annotation['annotation_text'],
@@ -25,7 +25,7 @@ def document_object():
 
 @pytest.fixture
 def policy():
-    with open(os.path.join(Path.root_path, 'data/test_data/carrefour_document_annotations.json'), 'r') as file:
+    with open(os.path.join(Path.root_path, 'data/test_data/policies/carrefour_document_annotations.json'), 'r') as file:
         data = json.load(file)
     return data['document']['document_name'], data['document']['text'], data['annotations']
 
