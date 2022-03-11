@@ -5,7 +5,7 @@ from rapidflow.experiments.experiment import Experiment
 
 from tiltify.config import BASE_BERT_MODEL, Path
 from tiltify.data import get_finetuning_datasets
-from tiltify.objective import BERTBinaryObjective, BERTRightToObjective
+from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective, BERTRightToObjective
 
 
 @click.command()
@@ -25,4 +25,3 @@ def train_bert(binary):
 
 if __name__ == "__main__":
     train_bert()
-
