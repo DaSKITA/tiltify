@@ -1,11 +1,10 @@
 from typing import Dict, List, Tuple, Union
-
 import pandas as pd
 from torch.utils.data import Dataset, Subset, random_split
 from torch import Generator, Tensor
 from transformers import BertTokenizer, BatchEncoding
 
-from tiltify.config import LABEL_REPLACE, RANDOM_SPLIT_SEED
+from tiltify.config import LABEL_REPLACE, RANDOM_SPLIT_SEED, Path
 
 
 class TiltDataset(Dataset):

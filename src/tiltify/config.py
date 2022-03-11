@@ -1,3 +1,4 @@
+from logging import root
 import os
 from pathlib import Path
 
@@ -17,6 +18,7 @@ LABEL_REPLACE = {'None': 0, 'Right to Information': 1, 'Right to Deletion': 2, '
 class Path:
 
     root_path = os.path.abspath(Path(os.path.dirname(__file__)).parent.parent)
-    policy_path = os.path.join(root_path, "data/official_policies")
+    data_path = os.path.join(root_path, "data")
+    policy_path = os.path.join(data_path, "official_policies")
     default_dataset_path = os.path.join(root_path, "data/de_sentence_data.csv")
     experiment_path = os.path.join(root_path, "experiments")
