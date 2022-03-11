@@ -7,7 +7,7 @@ from rapidflow.objective import Objective
 from transformers import BertForSequenceClassification, Trainer, TrainingArguments
 
 from tiltify.config import BASE_BERT_MODEL
-from tiltify.data import get_finetuning_datasets, TiltFinetuningDataset
+from tiltify.data import TiltFinetuningDataset
 
 
 class BERTBinaryObjective(Objective):
