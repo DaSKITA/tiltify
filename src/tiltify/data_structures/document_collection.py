@@ -1,0 +1,44 @@
+from tiltify.parsers.policy_parser import PolicyParser
+from tiltify.data_structures.document import Document
+from tiltify.data_loader import DataLoader
+from typing import List
+
+
+class DocumentCollection:
+
+    json_parser = PolicyParser()
+    data_loader = DataLoader()
+
+    def __init__(self, documents: List[Document]) -> None:
+        """This class provides policies in form of an iterator. For later usage it is also possible
+        to adjust the loading of each individual document. Therefore the usage of an iterator is preferred.
+
+        Args:
+            documents (List[Document]): _description_
+        """
+        self.documents = documents
+        self.index = 0
+
+    @classmethod
+    def from_json_files(cls, folder_name: str = "annotated_policies"):
+        json_policies = cls.data_loader.get_json_data(folder_name)
+        document_list = [cls.json_parser.parse(**json_policy["document"]) for json_policy in json_policies]
+        return cls(document_list)
+
+    @classmethod
+    def from_pickle_files(self):
+        pass
+
+    def __next__(self) -> Document:
+        try:
+            document = self.documents[self.index]
+        except IndexError:
+            raise StopIteration()
+        self.index += 1
+        return document
+
+    def __getitem__(self, key) -> Document:
+        return self.documents[key]
+
+    def __iter__(self):
+        return self
