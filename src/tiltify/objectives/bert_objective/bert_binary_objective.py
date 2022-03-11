@@ -1,13 +1,11 @@
 from typing import Dict
-
 import torch
-
 from rapidflow.metrics_handler import MetricsHandler
 from rapidflow.objective import Objective
 from transformers import BertForSequenceClassification, Trainer, TrainingArguments
 
 from tiltify.config import BASE_BERT_MODEL
-from tiltify.data import TiltFinetuningDataset
+from tiltify.objectives.bert_objective.bert_preprocessor import TiltFinetuningDataset
 
 
 class BERTBinaryObjective(Objective):
