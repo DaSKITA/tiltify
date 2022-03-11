@@ -1,15 +1,12 @@
-import argparse
-import os
 from typing import Dict
 
 import torch
 
-from rapidflow.experiments.experiment import Experiment
 from rapidflow.metrics_handler import MetricsHandler
 from rapidflow.objective import Objective
 from transformers import BertForSequenceClassification, Trainer, TrainingArguments
 
-from tiltify.config import BASE_BERT_MODEL, Path
+from tiltify.config import BASE_BERT_MODEL
 from tiltify.data import get_finetuning_datasets, TiltFinetuningDataset
 
 
@@ -78,22 +75,3 @@ class BERTRightToObjective(BERTBinaryObjective):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.labels = 6
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="You may choose to invoke binary classification.")
-    parser.add_argument("-b", "--binary", default=False, action="store_true",
-                        help="Using this argument invokes the binary classification of RightTo examples in general,\
-                        instead of classifying them distinctly.")
-    arguments = parser.parse_args()
-
-    train, val, test = get_finetuning_datasets(Path.default_dataset_path, BASE_BERT_MODEL, val=True,
-                                               binary=arguments.binary)
-    experiment = Experiment(experiment_path=os.path.abspath(''))
-
-    if arguments.binary:
-        experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
-    else:
-        experiment.add_objective(BERTRightToObjective, args=[train, val, test])
-
-    experiment.run(k=2, trials=2, num_processes=1)
