@@ -1,28 +1,41 @@
 import os
-
 import click
 from rapidflow.experiments.experiment import Experiment
 
 from tiltify.config import BASE_BERT_MODEL, Path
-from tiltify.data import get_finetuning_datasets
-from tiltify.objective import BERTBinaryObjective, BERTRightToObjective
+from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
+from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective, BERTRightToObjective
+from tiltify.data_structures.document_collection import DocumentCollection
+from tiltify.objectives.bert_objective.bert_splitter import BERTSplitter
 
 
 @click.command()
 @click.option('--binary', default=False, help='Using this argument invokes the binary classification of RightTo\
 examples in general, instead of classifying them distinctly.', is_flag=True)
-def train_bert(binary):
-    train, val, test = get_finetuning_datasets(Path.default_dataset_path, BASE_BERT_MODEL, val=True, binary=binary)
-    experiment = Experiment(experiment_path=os.path.abspath(''))
+@click.option("--n_upsample", default=None, help="Enable upsampling for underrepresented labels", type=float)
+@click.option("--n_downsample", default=None, help="Defines the percentage by which the overrepresented class \
+    is downsampled", type=float)
+@click.option("--k", default=1, type=int, help="Number of Experiment repitions")
+@click.option("--trials", default=50, type=int, help="Number of Hyperparameter Settings to run")
+@click.option("--num_processes", default=None, type=int, help="Number of processes for  running the experiment.")
+def train_bert(binary, n_upsample, n_downsample, k, trials, num_processes):
+    exp_dir = os.path.dirname(os.path.abspath(__file__))
+    # document_collection = DocumentCollection.from_json_files()
+    pandas_path = os.path.join(Path.data_path, "de_sentence_data.csv")
+    preprocessor = BERTPreprocessor(
+        bert_model=BASE_BERT_MODEL, binary=binary, n_upsample=n_upsample, n_downsample=n_downsample)
+    preprocessed_dataaset = preprocessor.preprocess_pandas(pandas_path=pandas_path)
+    bert_splitter = BERTSplitter(val=True, split_ratio=0.33)
+    train, val, test = bert_splitter.split(preprocessed_dataaset)
+    experiment = Experiment(experiment_path=exp_dir, title="Binary-Classification", model_name="Bert-FF")
 
     if binary:
         experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
     else:
         experiment.add_objective(BERTRightToObjective, args=[train, val, test])
 
-    experiment.run(k=2, trials=2, num_processes=1)
+    experiment.run(k=k, trials=trials, num_processes=num_processes)
 
 
 if __name__ == "__main__":
     train_bert()
-
