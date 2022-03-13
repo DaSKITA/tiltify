@@ -30,7 +30,7 @@ class DocumentCollection:
         Returns:
             _type_: _description_
         """
-        json_policies = cls.data_loader.get_json_data(folder_name)
+        json_policies = cls.data_loader.get_json_policies(folder_name)
         document_list = [cls.json_parser.parse(**json_policy["document"]) for json_policy in json_policies]
         return cls(document_list)
 
