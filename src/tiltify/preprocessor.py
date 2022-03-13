@@ -8,7 +8,3 @@ class Preprocessor(ABC):
     @abstractmethod
     def preprocess(self, document_collection: DocumentCollection):
         pass
-
-    @abstractmethod
-    def preprocess_document(self, document: Document):
-        pass

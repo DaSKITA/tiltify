@@ -1,8 +1,9 @@
-from typing import Dict, List, Union
-from torch.utils.data import Dataset, Subset
+from typing import Dict, List
+from torch.utils.data import Dataset
 from torch import Tensor
 from transformers import BertTokenizer, BatchEncoding
 from collections import defaultdict
+import pandas as pd
 
 from tiltify.config import LABEL_REPLACE, BASE_BERT_MODEL
 from tiltify.preprocessor import Preprocessor
@@ -62,7 +63,7 @@ class TiltDataset(Dataset):
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
-        return len(self.id)
+        return 100 #len(self.id)
 
     def __getitem__(self, idx) -> Dict:
         """returns the tokenized sentence and the id of the sentence at index idx
@@ -82,53 +83,6 @@ class TiltDataset(Dataset):
 
         return item
 
-
-class TiltFinetuningDataset(Dataset):
-    """ A dataset class used to wrap a TiltDataset
-        for fine-tuning a transformers model with the Trainer API.
-        Does not return sentence ids when indexed.
-        ...
-
-        Attributes
-        ----------
-        dataset : Dataset
-
-
-        Methods
-        -------
-        __len__()
-            returns the length of the dataset
-        __getitem__(idx)
-            returns the tokenized sentence and at index idx
-    """
-
-    def __init__(self, dataset: Union[TiltDataset, Subset]):
-        """
-        Parameters
-        ----------
-        dataset : Subset
-            a TiltDataset (or subset) which should be wrapped
-        """
-        self.dataset = dataset
-
-    def __len__(self) -> int:
-        """returns the length of the dataset"""
-        return len(self.dataset)
-
-    def __getitem__(self, idx) -> Dict:
-        """returns the tokenized sentence at index idx
-
-        Parameters
-        ----------
-        idx : int
-            specifies the index of the data to be returned
-        """
-        item = self.dataset[idx]
-        # remove id entry
-        item.pop('id', None)
-        return item
-
-
 class BERTPreprocessor(Preprocessor):
 
     def __init__(
@@ -145,6 +99,41 @@ class BERTPreprocessor(Preprocessor):
     def preprocess(self, document_collection: DocumentCollection):
         tilt_dataset = self._create_tilt_dataset(document_collection)
         return tilt_dataset
+
+    def preprocess_pandas(self, pandas_path):
+        """This function needs to be deleted when pandas is not needed anymore.
+
+        Args:
+            pandas_path (_type_): _description_
+        """
+        df_dataset = pd.read_csv(pandas_path)
+
+        # retrieving the contents of the dataset
+        sent_ids = list(df_dataset['id'])
+        sentences = list(df_dataset['sentence'])
+
+        # get target values if is training dataset
+        try:
+            labels = list(df_dataset['label'])
+        except KeyError:
+            labels = None
+
+        sentences_tokenized = self._tokenize_sentences(sentences)
+
+        # saving the ids and tokenized sentences into the according dataset object
+        test_data_dict = {'id': sent_ids, 'sentences': sentences_tokenized}
+
+        # add target values if existent
+        if labels:
+            test_data_dict['labels'] = labels
+
+        if self.upsample:
+            sentences, labels = self.upsample(sentences, labels)
+        if self.downsample:
+            sentences, labels = self.downsample(sentences, labels)
+        return TiltDataset(test_data_dict, binary=self.binary)
+
+
 
     def _create_tilt_dataset(self, document_collection: DocumentCollection):
         dataset_dict = defaultdict(list)
