@@ -5,7 +5,7 @@ from rapidflow.objective import Objective
 from transformers import BertForSequenceClassification, Trainer, TrainingArguments
 
 from tiltify.config import BASE_BERT_MODEL
-from tiltify.objectives.bert_objective.bert_preprocessor import TiltFinetuningDataset
+from tiltify.objectives.bert_objective.bert_splitter import TiltFinetuningDataset
 
 
 class BERTBinaryObjective(Objective):
@@ -33,15 +33,16 @@ class BERTBinaryObjective(Objective):
         # model setup
         model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=self.labels)
         self.track_model(model, hyperparameters)
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cpu") # torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(device)
         # train
         training_args = TrainingArguments("finetune_trainer",
                                           evaluation_strategy="epoch",
                                           logging_strategy="epoch",
-                                          per_device_train_batch_size=32,
-                                          per_device_eval_batch_size=32,
-                                          **self.hyperparameters)
+                                          per_device_train_batch_size=5,
+                                          per_device_eval_batch_size=5,
+                                          **self.hyperparameters,
+                                          no_cuda=True)
 
         trainer = Trainer(model=self.model,
                           args=training_args,
