@@ -1,13 +1,11 @@
 from typing import Dict
-
 import torch
-
 from rapidflow.metrics_handler import MetricsHandler
 from rapidflow.objective import Objective
 from transformers import BertForSequenceClassification, Trainer, TrainingArguments
 
 from tiltify.config import BASE_BERT_MODEL
-from tiltify.data import get_finetuning_datasets, TiltFinetuningDataset
+from tiltify.objectives.bert_objective.bert_splitter import TiltFinetuningDataset
 
 
 class BERTBinaryObjective(Objective):
@@ -24,12 +22,12 @@ class BERTBinaryObjective(Objective):
         preds = pred.predictions.argmax(-1)
         metrics_handler = MetricsHandler()
         classification_metrics = metrics_handler.calculate_classification_metrics(labels, preds)
-        return classification_metrics['macro avg f1-score']
+        return classification_metrics
 
     def train(self, trial=None) -> Dict:
         hyperparameters = dict(
             learning_rate=trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True),
-            num_train_epochs=1,
+            num_train_epochs=5,
             weight_decay=trial.suggest_float("weight_decay", 1e-7, 1e-5, log=True),
         )
         # model setup
@@ -41,8 +39,8 @@ class BERTBinaryObjective(Objective):
         training_args = TrainingArguments("finetune_trainer",
                                           evaluation_strategy="epoch",
                                           logging_strategy="epoch",
-                                          per_device_train_batch_size=32,
-                                          per_device_eval_batch_size=32,
+                                          per_device_train_batch_size=5,
+                                          per_device_eval_batch_size=5,
                                           **self.hyperparameters)
 
         trainer = Trainer(model=self.model,
@@ -53,7 +51,7 @@ class BERTBinaryObjective(Objective):
 
         trainer.train()
         metrics = trainer.evaluate()
-        return metrics
+        return metrics['eval_macro avg f1-score']
 
     def test(self):
         testing_args = TrainingArguments("finetune_trainer",

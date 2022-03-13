@@ -25,7 +25,9 @@ class PolicyParser(Parser):
     def __init__(self) -> None:
         self.filter = ParserFilter()
 
-    def parse(self, title: str, text: str, annotations: List) -> Document:
+    def parse(self, document_name: str, text: str, annotations: List = None) -> Document:
+        if not annotations:
+            annotations = []
         processed_text = self.filter.filter(text)
         blobs_raw = [blob for blob in processed_text.split('\n') if blob != '']
         blobs_annotated = []
@@ -56,5 +58,5 @@ class PolicyParser(Parser):
                  for blob_annotated in blobs_annotated]
 
         # create a Document object from the Blob objects
-        doc = Document(title, blobs)
+        doc = Document(document_name, blobs)
         return doc
