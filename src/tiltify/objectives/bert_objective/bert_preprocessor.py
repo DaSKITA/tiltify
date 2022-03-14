@@ -51,16 +51,7 @@ class TiltDataset(Dataset):
 
         self.sentences = data['sentences']
         self.id = Tensor(data['id'])
-
-        # add target values if existent
-        if binary:
-            label_data = [0 if entry == "None" else 1 for entry in data['labels']]
-        else:
-            label_data = [LABEL_REPLACE[entry] for entry in data['labels']]
-        if label_data != []:
-            self.labels = Tensor(label_data).long()
-        else:
-            self.labels = None
+        self.labels = data["labels"]
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
@@ -79,7 +70,7 @@ class TiltDataset(Dataset):
         item['id'] = self.id[idx]
 
         # add target values if existent
-        if self.labels is not None:
+        if self.labels:
             item['label'] = self.labels[idx]
 
         return item
@@ -109,30 +100,23 @@ class BERTPreprocessor(Preprocessor):
             pandas_path (_type_): _description_
         """
         df_dataset = pd.read_csv(pandas_path)
-
-        # retrieving the contents of the dataset
-        sent_ids = list(df_dataset['id'])
         sentences = list(df_dataset['sentence'])
-
         # get target values if is training dataset
-        try:
-            labels = list(df_dataset['label'])
-        except KeyError:
+        labels = df_dataset.get("label", None).to_list()
+        if labels == []:
             labels = None
-
-        sentences_tokenized = self._tokenize_sentences(sentences)
-
-        # saving the ids and tokenized sentences into the according dataset object
-        test_data_dict = {'id': sent_ids, 'sentences': sentences_tokenized}
-
-        # add target values if existent
-        if labels:
-            test_data_dict['labels'] = labels
+        labels = self._prepare_labels(labels)
 
         if self.n_upsample:
             sentences, labels = self.upsample(sentences, labels)
         if self.n_downsample:
             sentences, labels = self.downsample(sentences, labels)
+
+        sent_ids = [idx for idx in range(len(sentences))]
+        sentences_tokenized = self._tokenize_sentences(sentences)
+
+        # saving the ids and tokenized sentences into the according dataset object
+        test_data_dict = {'id': sent_ids, 'sentences': sentences_tokenized, "labels": labels}
         return TiltDataset(test_data_dict, binary=self.binary)
 
     def _create_tilt_dataset(self, document_collection: DocumentCollection):
@@ -193,3 +177,10 @@ class BERTPreprocessor(Preprocessor):
         sentences = [sentences[idx] for idx in downsampled_majorities] + [sentences[idx] for idx in minority]
         labels = [labels[idx] for idx in downsampled_majorities] + [labels[idx] for idx in minority]
         return sentences, labels
+
+    def _prepare_labels(self, labels):
+        if self.binary:
+            label_data = [0 if entry == "None" else 1 for entry in labels]
+        else:
+            label_data = [LABEL_REPLACE[entry] for entry in labels]
+        return label_data

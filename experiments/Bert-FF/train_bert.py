@@ -9,15 +9,15 @@ from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.objectives.bert_objective.bert_splitter import BERTSplitter
 
 
-@click.command()
-@click.option('--binary', default=False, help='Using this argument invokes the binary classification of RightTo\
-examples in general, instead of classifying them distinctly.', is_flag=True)
-@click.option("--n_upsample", default=None, help="Enable upsampling for underrepresented labels", type=float)
-@click.option("--n_downsample", default=None, help="Defines the percentage by which the overrepresented class \
-    is downsampled", type=float)
-@click.option("--k", default=1, type=int, help="Number of Experiment repitions")
-@click.option("--trials", default=50, type=int, help="Number of Hyperparameter Settings to run")
-@click.option("--num_processes", default=None, type=int, help="Number of processes for  running the experiment.")
+# @click.command()
+# @click.option('--binary', default=False, help='Using this argument invokes the binary classification of RightTo\
+# examples in general, instead of classifying them distinctly.', is_flag=True)
+# @click.option("--n_upsample", default=None, help="Enable upsampling for underrepresented labels", type=float)
+# @click.option("--n_downsample", default=None, help="Defines the percentage by which the overrepresented class \
+#     is downsampled", type=float)
+# @click.option("--k", default=1, type=int, help="Number of Experiment repitions")
+# @click.option("--trials", default=50, type=int, help="Number of Hyperparameter Settings to run")
+# @click.option("--num_processes", default=None, type=int, help="Number of processes for  running the experiment.")
 def train_bert(binary, n_upsample, n_downsample, k, trials, num_processes):
     exp_dir = os.path.dirname(os.path.abspath(__file__))
     # document_collection = DocumentCollection.from_json_files()
@@ -38,4 +38,4 @@ def train_bert(binary, n_upsample, n_downsample, k, trials, num_processes):
 
 
 if __name__ == "__main__":
-    train_bert()
+    train_bert(binary=True, n_upsample=0.9, n_downsample=0.05, k=1, trials=1, num_processes=1)
