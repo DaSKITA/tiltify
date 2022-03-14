@@ -64,7 +64,7 @@ class TiltDataset(Dataset):
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
-        return 100# len(self.id)
+        return len(self.id)
 
     def __getitem__(self, idx) -> Dict:
         """returns the tokenized sentence and the id of the sentence at index idx
