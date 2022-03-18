@@ -5,13 +5,13 @@ from rapidflow.objective import Objective
 from transformers import BertForSequenceClassification, Trainer, TrainingArguments
 
 from tiltify.config import BASE_BERT_MODEL
-from tiltify.objectives.bert_objective.bert_splitter import TiltFinetuningDataset
+from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
 
 
 class BERTBinaryObjective(Objective):
 
-    def __init__(self, train_dataset: TiltFinetuningDataset, val_dataset: TiltFinetuningDataset,
-                 test_dataset: TiltFinetuningDataset):
+    def __init__(self, train_dataset: TiltDataset, val_dataset: TiltDataset,
+                 test_dataset: TiltDataset):
         super().__init__()
         self.train_dataset, self.val_dataset, self.test_dataset = train_dataset, val_dataset, test_dataset
         self.labels = 2
