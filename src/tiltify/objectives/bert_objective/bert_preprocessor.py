@@ -4,7 +4,6 @@ from torch import Tensor
 from transformers import BertTokenizer, BatchEncoding
 from collections import defaultdict
 import pandas as pd
-import random
 
 from tiltify.config import LABEL_REPLACE, BASE_BERT_MODEL
 from tiltify.preprocessor import Preprocessor
@@ -40,7 +39,7 @@ class TiltDataset(Dataset):
         sentence at index idx
     """
 
-    def __init__(self, data, binary=False):
+    def __init__(self, data):
         """
         Parameters
         ----------
@@ -50,12 +49,12 @@ class TiltDataset(Dataset):
         """
 
         self.sentences = data['sentences']
-        self.id = Tensor(data['id'])
+        #self.id = Tensor(data['id'])
         self.labels = data["labels"]
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
-        return len(self.id)
+        return len(self.sentences)
 
     def __getitem__(self, idx) -> Dict:
         """returns the tokenized sentence and the id of the sentence at index idx
@@ -67,7 +66,7 @@ class TiltDataset(Dataset):
         """
 
         item = {key: val[idx, :] for key, val in self.sentences.items()}
-        item['id'] = self.id[idx]
+        #item['id'] = self.id[idx]
 
         # add target values if existent
         if self.labels:
@@ -107,17 +106,12 @@ class BERTPreprocessor(Preprocessor):
             labels = None
         labels = self._prepare_labels(labels)
 
-        if self.n_upsample:
-            sentences, labels = self.upsample(sentences, labels)
-        if self.n_downsample:
-            sentences, labels = self.downsample(sentences, labels)
-
         sent_ids = [idx for idx in range(len(sentences))]
         sentences_tokenized = self._tokenize_sentences(sentences)
 
         # saving the ids and tokenized sentences into the according dataset object
         test_data_dict = {'id': sent_ids, 'sentences': sentences_tokenized, "labels": labels}
-        return TiltDataset(test_data_dict, binary=self.binary)
+        return TiltDataset(test_data_dict)
 
     def _create_tilt_dataset(self, document_collection: DocumentCollection):
         dataset_dict = defaultdict(list)
@@ -162,21 +156,6 @@ class BERTPreprocessor(Preprocessor):
         # TODO: case where one blob has multiple annotations -> needsto be accessed in the model
         labels = [blob.get_annotations()[0] for blob in document_blobs]
         return labels
-
-    def upsample(self, sentences, labels):
-        minority = [idx for idx, label in enumerate(labels) if label == 1]
-        upsampled_minorities = random.choices(minority, k=int(self.n_upsample * len(minority)))
-        sentences += [sentences[idx] for idx in upsampled_minorities]
-        labels += [labels[idx] for idx in upsampled_minorities]
-        return sentences, labels
-
-    def downsample(self, sentences, labels):
-        majority = [idx for idx, label in enumerate(labels) if label == 0]
-        minority = [idx for idx, label in enumerate(labels) if label == 1]
-        downsampled_majorities = random.choices(majority, k=int(self.n_downsample* len(majority)))
-        sentences = [sentences[idx] for idx in downsampled_majorities] + [sentences[idx] for idx in minority]
-        labels = [labels[idx] for idx in downsampled_majorities] + [labels[idx] for idx in minority]
-        return sentences, labels
 
     def _prepare_labels(self, labels):
         if self.binary:
