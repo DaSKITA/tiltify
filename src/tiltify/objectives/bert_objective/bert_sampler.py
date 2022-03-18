@@ -1,6 +1,6 @@
 import random
 from typing import Tuple, List
-from tiltify.objectives.bert_objective.bert_splitter import TiltFinetuningDataset
+from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
 
 
 class BERTSampler:
@@ -23,11 +23,12 @@ class BERTSampler:
         labels = [labels[idx] for idx in downsampled_majorities] + [labels[idx] for idx in minority]
         return sentences, labels
 
-    def sample(self, dataset: TiltFinetuningDataset) -> Tuple[List[str], List[int]]:
-        sentences = dataset.dataset.dataset.sentences
-        labels = dataset.dataset.dataset.labels
+    def sample(self, dataset: TiltDataset) -> Tuple[List[str], List[int]]:
+        sentences = dataset.dataset.sentences
+        labels = dataset.dataset.labels
         if self.n_upsample:
             sentences, labels = self.upsample(sentences, labels)
         if self.n_downsample:
             sentences, labels = self.downsample(sentences, labels)
-        return sentences, labels
+        dataset = TiltDataset(data={"labels": labels, "sentences": sentences})
+        return dataset

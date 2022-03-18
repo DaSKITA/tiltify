@@ -1,55 +1,8 @@
 from torch.utils.data import random_split, Subset
 from torch import Generator
 from tiltify.config import RANDOM_SPLIT_SEED
-from typing import Tuple, Union, Dict
 from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
-from torch.utils.data import Dataset
-
-
-class TiltFinetuningDataset(Dataset):
-    """ A dataset class used to wrap a TiltDataset
-        for fine-tuning a transformers model with the Trainer API.
-        Does not return sentence ids when indexed.
-        ...
-
-        Attributes
-        ----------
-        dataset : Dataset
-
-
-        Methods
-        -------
-        __len__()
-            returns the length of the dataset
-        __getitem__(idx)
-            returns the tokenized sentence and at index idx
-    """
-
-    def __init__(self, dataset: Union[TiltDataset, Subset]):
-        """
-        Parameters
-        ----------
-        dataset : Subset
-            a TiltDataset (or subset) which should be wrapped
-        """
-        self.dataset = dataset
-
-    def __len__(self) -> int:
-        """returns the length of the dataset"""
-        return len(self.dataset)
-
-    def __getitem__(self, idx) -> Dict:
-        """returns the tokenized sentence at index idx
-
-        Parameters
-        ----------
-        idx : int
-            specifies the index of the data to be returned
-        """
-        item = self.dataset[idx]
-        # remove id entry
-        item.pop('id', None)
-        return item
+from typing import Tuple
 
 
 class BERTSplitter:
@@ -82,20 +35,20 @@ class BERTSplitter:
         return train, test
 
     def get_finetuning_datasets(
-            self, tilt_dataset) -> Tuple[TiltFinetuningDataset, TiltFinetuningDataset, TiltFinetuningDataset]:
+            self, tilt_dataset) -> Tuple[TiltDataset, TiltDataset, TiltDataset]:
 
         if self.split_ratio:
             train_ds, val_test_ds = self.get_train_test_split(tilt_dataset, self.split_ratio)
-            train_ft_ds = TiltFinetuningDataset(train_ds)
+            train_ft_ds = train_ds
             if self.val:
                 val_ds, test_ds = self.get_train_test_split(val_test_ds, 0.5)
-                val_ft_ds = TiltFinetuningDataset(val_ds)
-                test_ft_ds = TiltFinetuningDataset(test_ds)
+                val_ft_ds = val_ds
+                test_ft_ds = test_ds
             else:
                 val_ft_ds = None
-                test_ft_ds = TiltFinetuningDataset(val_test_ds)
+                test_ft_ds = val_test_ds
         else:
-            train_ft_ds = TiltFinetuningDataset(tilt_dataset)
+            train_ft_ds = tilt_dataset
             val_ft_ds = None
             test_ft_ds = None
 
