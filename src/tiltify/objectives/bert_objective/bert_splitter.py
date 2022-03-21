@@ -1,5 +1,7 @@
 from torch.utils.data import random_split, Subset
 from torch import Generator
+import torch
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from tiltify.config import RANDOM_SPLIT_SEED
 from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
 from typing import Tuple
@@ -7,12 +9,19 @@ from typing import Tuple
 
 class BERTSplitter:
 
-    def __init__(self, split_ratio: float = None, val: bool = True) -> None:
+    def __init__(self, split_ratio: float = None, val: bool = True, batch_size: int = None) -> None:
         self.split_ratio = split_ratio
         self.val = val
+        if batch_size:
+            self.batch_size = batch_size
 
-    def split(self, preprocessed_data):
-        return self.get_finetuning_datasets(preprocessed_data)
+    def split(self, preprocessed_data: TiltDataset):
+        set_list = self.get_finetuning_datasets(preprocessed_data)
+        sampler = self._create_sampler(preprocessed_data)
+        for split_set in set_list:
+            if split_set:
+                split_set = self._create_dataloader(split_set, sampler)
+        return set_list
 
     def get_train_test_split(self, dataset: TiltDataset, split_ratio: float = None) -> Tuple[Subset, Subset]:
         # TODO: splits need to be handled outside of the preprocessor
@@ -35,7 +44,7 @@ class BERTSplitter:
         return train, test
 
     def get_finetuning_datasets(
-            self, tilt_dataset) -> Tuple[TiltDataset, TiltDataset, TiltDataset]:
+            self, tilt_dataset: TiltDataset) -> Tuple[TiltDataset, TiltDataset, TiltDataset]:
 
         if self.split_ratio:
             train_ds, val_test_ds = self.get_train_test_split(tilt_dataset, self.split_ratio)
@@ -51,5 +60,13 @@ class BERTSplitter:
             train_ft_ds = tilt_dataset
             val_ft_ds = None
             test_ft_ds = None
+        return [train_ft_ds, val_ft_ds, test_ft_ds]
 
-        return train_ft_ds, val_ft_ds, test_ft_ds
+    def _create_dataloader(self, dataset: TiltDataset, sampler: WeightedRandomSampler) -> DataLoader:
+        loader = DataLoader(dataset=dataset, batch_size=self.batch_size, sampler=sampler)
+        return loader
+
+    def _create_sampler(self, dataset: TiltDataset) -> WeightedRandomSampler:
+        class_weights = [
+            1/torch.sum(dataset.labels == label).float() for label in dataset.labels.unique(sorted=True)]
+        return WeightedRandomSampler(class_weights, num_samples=self.batch_size)

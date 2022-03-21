@@ -2,7 +2,9 @@ from typing import Dict
 import torch
 from rapidflow.metrics_handler import MetricsHandler
 from rapidflow.objective import Objective
-from transformers import BertForSequenceClassification, Trainer, TrainingArguments
+from transformers import BertForSequenceClassification, get_scheduler
+from torch.optim import AdamW
+import tqdm
 
 from tiltify.config import BASE_BERT_MODEL
 from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
@@ -10,19 +12,19 @@ from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
 
 class BERTBinaryObjective(Objective):
 
-    def __init__(self, train_dataset: TiltDataset, val_dataset: TiltDataset,
-                 test_dataset: TiltDataset):
-        super().__init__()
-        self.train_dataset, self.val_dataset, self.test_dataset = train_dataset, val_dataset, test_dataset
-        self.labels = 2
+    def __init__(
+            self, train_dataloader: TiltDataset, val_dataloader: TiltDataset, test_dataloader: TiltDataset):
+        """https://huggingface.co/docs/transformers/training
 
-    @staticmethod
-    def _metric_func(pred):
-        labels = pred.label_ids
-        preds = pred.predictions.argmax(-1)
-        metrics_handler = MetricsHandler()
-        classification_metrics = metrics_handler.calculate_classification_metrics(labels, preds)
-        return classification_metrics
+        Args:
+            train_dataset (TiltDataset): _description_
+            val_dataset (TiltDataset): _description_
+            test_dataset (TiltDataset): _description_
+        """
+        super().__init__()
+        self.train_dataloader, self.val_dataloader, self.test_dataloader = \
+            train_dataloader, val_dataloader, test_dataloader
+        self.labels = 2
 
     def train(self, trial=None) -> Dict:
         hyperparameters = dict(
@@ -30,42 +32,61 @@ class BERTBinaryObjective(Objective):
             num_train_epochs=5,
             weight_decay=trial.suggest_float("weight_decay", 1e-7, 1e-5, log=True),
         )
+        num_training_steps = hyperparameters["num_train_epochs"] * len(self.train_dataloader)
+        metrics_handler = MetricsHandler()
         # model setup
         model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=self.labels)
         self.track_model(model, hyperparameters)
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(device)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self.device)
+        optimizer = AdamW(
+            self.model.parameters(), lr=hyperparameters["learning_rate"],
+            weight_decay=hyperparameters["weight_decay"])
+        lr_scheduler = get_scheduler(
+            name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps)
         # train
-        training_args = TrainingArguments("finetune_trainer",
-                                          evaluation_strategy="epoch",
-                                          logging_strategy="epoch",
-                                          per_device_train_batch_size=32,
-                                          per_device_eval_batch_size=32,
-                                          **self.hyperparameters)
+        self.model.train()
+        for epoch in tqdm.tqdm(range(hyperparameters["num_train_epochs"])):
+            for batch in self.train_dataloader:
+                tokenized_sentences, _ = batch
+                tokenized_sentences = {k: v.to(self.device) for k, v in tokenized_sentences.items()}
+                outputs = model(**tokenized_sentences)
+                loss = outputs.loss
+                loss.backward()
+                optimizer.step()
+                lr_scheduler.step()
+                optimizer.zero_grad()
 
-        trainer = Trainer(model=self.model,
-                          args=training_args,
-                          train_dataset=self.train_dataset,
-                          eval_dataset=self.val_dataset,
-                          compute_metrics=self._metric_func)
-
-        trainer.train()
-        metrics = trainer.evaluate()
+        val_labels = []
+        val_preds = []
+        self.model.eval()
+        for batch in self.val_dataloader:
+            val_labels += batch["label"].tolist()
+            batch = {k: v.to(self.device) for k, v in batch.items()}
+            with torch.no_grad():
+                output = self.model(**batch)
+            logits = output.logits
+            predictions = torch.argmax(logits, dim=-1)
+            val_preds += predictions.detach().cpu().tolist()
+        metrics_handler = MetricsHandler()
+        metrics = metrics_handler.calculate_classification_metrics(val_labels, val_preds)
         return metrics['eval_macro avg f1-score']
 
     def test(self):
-        testing_args = TrainingArguments("finetune_trainer",
-                                         evaluation_strategy="epoch",
-                                         logging_strategy="epoch",
-                                         per_device_train_batch_size=32,
-                                         per_device_eval_batch_size=32)
-
-        trainer = Trainer(model=self.model,
-                          args=testing_args,
-                          eval_dataset=self.test_dataset,
-                          compute_metrics=self._metric_func)
-
-        return trainer.evaluate()
+        test_labels = []
+        test_preds = []
+        self.model.eval()
+        for batch in self.test_dataloader:
+            test_labels += batch["label"].tolist()
+            batch = {k: v.to(self.device) for k, v in batch.items()}
+            with torch.no_grad():
+                output = self.model(**batch)
+            logits = output.logits
+            predictions = torch.argmax(logits, dim=-1)
+            test_preds += predictions.detach().cpu().tolist()
+        metrics_handler = MetricsHandler()
+        metrics = metrics_handler.calculate_classification_metrics(test_labels, test_preds)
+        return metrics
 
 
 class BERTRightToObjective(BERTBinaryObjective):
