@@ -1,6 +1,6 @@
 from typing import Dict, List
 from torch.utils.data import Dataset
-from torch import Tensor
+import torch
 from transformers import BertTokenizer, BatchEncoding
 from collections import defaultdict
 import pandas as pd
@@ -47,10 +47,8 @@ class TiltDataset(Dataset):
             a dict containing both the padded and tokenized
             sentences and the ids of those sentences
         """
-
         self.sentences = data['sentences']
-        #self.id = Tensor(data['id'])
-        self.labels = data["labels"]
+        self.labels = torch.Tensor(data["labels"])
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
@@ -65,36 +63,32 @@ class TiltDataset(Dataset):
             specifies the index of the data to be returned
         """
 
-        item = {key: val[idx, :] for key, val in self.sentences.items()}
-        #item['id'] = self.id[idx]
-
         # add target values if existent
-        if self.labels:
-            item['label'] = self.labels[idx]
-
-        return item
+        return_val = []
+        sentence_dict = {k: v[idx] for k, v in self.sentences.items()}
+        return_val.append(sentence_dict)
+        if self.labels is not None:
+            return_val.append(self.labels[idx])
+        return return_val
 
 
 class BERTPreprocessor(Preprocessor):
 
     def __init__(
-        self, bert_model: str = None, binary: bool = False, n_upsample: float = None,
-            n_downsample: float = None) -> None:
+            self, bert_model: str = None, binary: bool = False) -> None:
         if bert_model:
             self.bert_model = bert_model
         else:
             self.bert_model = BASE_BERT_MODEL
         self.binary = binary
-        self.n_upsample = n_upsample
-        self.n_downsample = n_downsample
 
     def preprocess(self, document_collection: DocumentCollection):
         tilt_dataset = self._create_tilt_dataset(document_collection)
         return tilt_dataset
 
     def preprocess_pandas(self, pandas_path):
-        """This function needs to be deleted when pandas is not needed anymore.
-
+        """
+        This function needs to be deleted when pandas is not needed anymore.
         Args:
             pandas_path (_type_): _description_
         """
@@ -105,12 +99,10 @@ class BERTPreprocessor(Preprocessor):
         if labels == []:
             labels = None
         labels = self._prepare_labels(labels)
-
-        sent_ids = [idx for idx in range(len(sentences))]
         sentences_tokenized = self._tokenize_sentences(sentences)
 
         # saving the ids and tokenized sentences into the according dataset object
-        test_data_dict = {'id': sent_ids, 'sentences': sentences_tokenized, "labels": labels}
+        test_data_dict = {'sentences': sentences_tokenized, "labels": labels}
         return TiltDataset(test_data_dict)
 
     def _create_tilt_dataset(self, document_collection: DocumentCollection):
@@ -118,12 +110,7 @@ class BERTPreprocessor(Preprocessor):
         for document in document_collection:
             labels = self._get_labels(document.blobs)
             sentences = document.blobs
-            if self.upsample:
-                sentences, labels = self.upsample(sentences, labels)
-            if self.downsample:
-                sentences, labels = self.downsample(sentences, labels)
             tokenized_sentences = self._tokenize_sentences(sentences)
-
             dataset_dict["sentences"].append(tokenized_sentences)
             dataset_dict["labels"].append(labels)
         dataset_dict["id"] = [idx for idx in range(len(dataset_dict["sentence"]))]
