@@ -47,12 +47,14 @@ class TiltDataset(Dataset):
             a dict containing both the padded and tokenized
             sentences and the ids of those sentences
         """
-        self.sentences = data['sentences']
+        self.input_ids = data['sentences']["input_ids"]
+        self.attention_mask = data["sentences"]["attention_mask"]
+        self.token_type_ids = data["sentences"]["token_type_ids"]
         self.labels = torch.Tensor(data["labels"])
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
-        return len(self.sentences)
+        return self.input_ids.shape[0]
 
     def __getitem__(self, idx) -> Dict:
         """returns the tokenized sentence and the id of the sentence at index idx
@@ -62,14 +64,14 @@ class TiltDataset(Dataset):
         idx : int
             specifies the index of the data to be returned
         """
-
-        # add target values if existent
-        return_val = []
-        sentence_dict = {k: v[idx] for k, v in self.sentences.items()}
-        return_val.append(sentence_dict)
+        output_dict = dict(
+            input_ids=self.input_ids[idx],
+            attention_mask=self.attention_mask[idx],
+            token_type_ids=self.token_type_ids[idx]
+        )
         if self.labels is not None:
-            return_val.append(self.labels[idx])
-        return return_val
+            output_dict["labels"] = self.labels[idx]
+        return output_dict
 
 
 class BERTPreprocessor(Preprocessor):
@@ -107,13 +109,13 @@ class BERTPreprocessor(Preprocessor):
 
     def _create_tilt_dataset(self, document_collection: DocumentCollection):
         dataset_dict = defaultdict(list)
+        # TODO: adjust this one as tokenized sentences appended might cause bugs
         for document in document_collection:
             labels = self._get_labels(document.blobs)
             sentences = document.blobs
             tokenized_sentences = self._tokenize_sentences(sentences)
             dataset_dict["sentences"].append(tokenized_sentences)
             dataset_dict["labels"].append(labels)
-        dataset_dict["id"] = [idx for idx in range(len(dataset_dict["sentence"]))]
         return TiltDataset(dataset_dict, binary=self.binary)
 
     def _tokenize_sentences(self, sentences: List[str]) -> BatchEncoding:
