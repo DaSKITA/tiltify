@@ -48,9 +48,9 @@ class BERTBinaryObjective(Objective):
         self.model.train()
         for epoch in tqdm.tqdm(range(hyperparameters["num_train_epochs"])):
             for batch in self.train_dataloader:
-                tokenized_sentences, _ = batch
-                tokenized_sentences = {k: v.to(self.device) for k, v in tokenized_sentences.items()}
-                outputs = model(**tokenized_sentences)
+                batch.pop("labels")
+                batch = {k: v.to(self.device) for k, v in batch.items()}
+                outputs = model(**batch)
                 loss = outputs.loss
                 loss.backward()
                 optimizer.step()
@@ -70,7 +70,7 @@ class BERTBinaryObjective(Objective):
             val_preds += predictions.detach().cpu().tolist()
         metrics_handler = MetricsHandler()
         metrics = metrics_handler.calculate_classification_metrics(val_labels, val_preds)
-        return metrics['eval_macro avg f1-score']
+        return metrics['macro avg f1-score']
 
     def test(self):
         test_labels = []

@@ -2,7 +2,6 @@ from torch.utils.data import random_split, Subset
 from torch import Generator
 import torch
 from torch.utils.data import DataLoader, WeightedRandomSampler
-from tiltify.config import RANDOM_SPLIT_SEED
 from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
 from typing import Tuple
 
@@ -40,7 +39,7 @@ class BERTSplitter:
         train_size = len(dataset) - test_size
         # calculate the split
         train, test = random_split(
-            dataset, [train_size, test_size], generator=Generator().manual_seed(RANDOM_SPLIT_SEED))
+            dataset, [train_size, test_size], generator=Generator())
         return train, test
 
     def get_finetuning_datasets(
