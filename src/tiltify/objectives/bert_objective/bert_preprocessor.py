@@ -2,7 +2,6 @@ from typing import Dict, List
 from torch.utils.data import Dataset
 import torch
 from transformers import BertTokenizer, BatchEncoding
-from collections import defaultdict
 import pandas as pd
 
 from tiltify.config import LABEL_REPLACE, BASE_BERT_MODEL
@@ -39,7 +38,7 @@ class TiltDataset(Dataset):
         sentence at index idx
     """
 
-    def __init__(self, data):
+    def __init__(self, sentences: Dict, labels: List):
         """
         Parameters
         ----------
@@ -47,16 +46,16 @@ class TiltDataset(Dataset):
             a dict containing both the padded and tokenized
             sentences and the ids of those sentences
         """
-        self.input_ids = data['sentences']["input_ids"]
-        self.attention_mask = data["sentences"]["attention_mask"]
-        self.token_type_ids = data["sentences"]["token_type_ids"]
-        self.labels = torch.Tensor(data["labels"])
+        self.input_ids = sentences["input_ids"]
+        self.attention_mask = sentences["attention_mask"]
+        self.token_type_ids = sentences["token_type_ids"]
+        self.labels = torch.Tensor(labels)
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
         return self.input_ids.shape[0]
 
-    def __getitem__(self, idx) -> Dict:
+    def __getitem__(self, idx: int) -> Dict:
         """returns the tokenized sentence and the id of the sentence at index idx
 
         Parameters
@@ -88,7 +87,7 @@ class BERTPreprocessor(Preprocessor):
         tilt_dataset = self._create_tilt_dataset(document_collection)
         return tilt_dataset
 
-    def preprocess_pandas(self, pandas_path):
+    def preprocess_pandas(self, pandas_path: str):
         """
         This function needs to be deleted when pandas is not needed anymore.
         Args:
@@ -102,21 +101,19 @@ class BERTPreprocessor(Preprocessor):
             labels = None
         labels = self._prepare_labels(labels)
         sentences_tokenized = self._tokenize_sentences(sentences)
-
-        # saving the ids and tokenized sentences into the according dataset object
-        test_data_dict = {'sentences': sentences_tokenized, "labels": labels}
-        return TiltDataset(test_data_dict)
+        return TiltDataset(sentences=sentences_tokenized, labels=labels)
 
     def _create_tilt_dataset(self, document_collection: DocumentCollection):
-        dataset_dict = defaultdict(list)
-        # TODO: adjust this one as tokenized sentences appended might cause bugs
+        sentences = []
+        labels = []
+        # TODO: adjust this one as tokenized sentences appended might cause bugs, also adjust for per document preds
         for document in document_collection:
             labels = self._get_labels(document.blobs)
             sentences = document.blobs
             tokenized_sentences = self._tokenize_sentences(sentences)
-            dataset_dict["sentences"].append(tokenized_sentences)
-            dataset_dict["labels"].append(labels)
-        return TiltDataset(dataset_dict, binary=self.binary)
+            sentences.append(tokenized_sentences)
+            labels.append(labels)
+        return TiltDataset(sentences, labels)
 
     def _tokenize_sentences(self, sentences: List[str]) -> BatchEncoding:
         """Tokenizes and pads a list of sentences using the model specified.
@@ -146,7 +143,7 @@ class BERTPreprocessor(Preprocessor):
         labels = [blob.get_annotations()[0] for blob in document_blobs]
         return labels
 
-    def _prepare_labels(self, labels):
+    def _prepare_labels(self, labels: List):
         if self.binary:
             label_data = [0 if entry == "None" else 1 for entry in labels]
         else:
