@@ -37,7 +37,7 @@ class BERTBinaryObjective(Objective):
         # model setup
         model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=self.labels)
         self.track_model(model, hyperparameters)
-        self.device = torch.device("cpu") # torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
         criterion = torch.nn.BCEWithLogitsLoss()
         optimizer = AdamW(
