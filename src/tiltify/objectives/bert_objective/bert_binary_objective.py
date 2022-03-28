@@ -37,8 +37,9 @@ class BERTBinaryObjective(Objective):
         # model setup
         model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=self.labels)
         self.track_model(model, hyperparameters)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu") # torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
+        criterion = torch.nn.BCEWithLogitsLoss()
         optimizer = AdamW(
             self.model.parameters(), lr=hyperparameters["learning_rate"],
             weight_decay=hyperparameters["weight_decay"])
@@ -48,10 +49,10 @@ class BERTBinaryObjective(Objective):
         self.model.train()
         for epoch in tqdm.tqdm(range(hyperparameters["num_train_epochs"])):
             for batch in self.train_dataloader:
-                batch.pop("labels")
+                labels = batch.pop("labels")
                 batch = {k: v.to(self.device) for k, v in batch.items()}
                 outputs = model(**batch)
-                loss = outputs.loss
+                loss = criterion(outputs.logits.max(dim=1)[0], labels)
                 loss.backward()
                 optimizer.step()
                 lr_scheduler.step()
