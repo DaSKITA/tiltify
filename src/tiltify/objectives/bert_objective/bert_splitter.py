@@ -1,102 +1,51 @@
-from torch.utils.data import random_split, Subset
-from torch import Generator
-from tiltify.config import RANDOM_SPLIT_SEED
-from typing import Tuple, Union, Dict
+import torch
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
-from torch.utils.data import Dataset
-
-
-class TiltFinetuningDataset(Dataset):
-    """ A dataset class used to wrap a TiltDataset
-        for fine-tuning a transformers model with the Trainer API.
-        Does not return sentence ids when indexed.
-        ...
-
-        Attributes
-        ----------
-        dataset : Dataset
-
-
-        Methods
-        -------
-        __len__()
-            returns the length of the dataset
-        __getitem__(idx)
-            returns the tokenized sentence and at index idx
-    """
-
-    def __init__(self, dataset: Union[TiltDataset, Subset]):
-        """
-        Parameters
-        ----------
-        dataset : Subset
-            a TiltDataset (or subset) which should be wrapped
-        """
-        self.dataset = dataset
-
-    def __len__(self) -> int:
-        """returns the length of the dataset"""
-        return len(self.dataset)
-
-    def __getitem__(self, idx) -> Dict:
-        """returns the tokenized sentence at index idx
-
-        Parameters
-        ----------
-        idx : int
-            specifies the index of the data to be returned
-        """
-        item = self.dataset[idx]
-        # remove id entry
-        item.pop('id', None)
-        return item
+from typing import Tuple, List
+from sklearn.model_selection import train_test_split
 
 
 class BERTSplitter:
 
-    def __init__(self, split_ratio: float = None, val: bool = True) -> None:
+    def __init__(self, val: float = False, split_ratio: bool = None, batch_size: int = None) -> None:
         self.split_ratio = split_ratio
         self.val = val
+        if batch_size:
+            self.batch_size = batch_size
 
-    def split(self, preprocessed_data):
-        return self.get_finetuning_datasets(preprocessed_data)
+    def split(self, preprocessed_data: TiltDataset):
+        loader_list = []
+        split_idx_list = self._perform_splitting(dataset=preprocessed_data)
+        set_list = self._apply_splitted_idx(preprocessed_data, split_idx_list)
+        for split_set in set_list:
+            if split_set:
+                loader_list.append(self._create_dataloader(split_set))
+        return loader_list
 
-    def get_train_test_split(self, dataset: TiltDataset, split_ratio: float = None) -> Tuple[Subset, Subset]:
-        # TODO: splits need to be handled outside of the preprocessor
-        """Get a train/test split for the given dataset
-
-        Parameters
-        ----------
-        dataset : TiltDataset
-            a dataset containing tokenized sentences
-        n_test : float
-            the ratio of the items in the dataset to be used for evaluation
-            """
-
-        # determine sizes
-        test_size = round(split_ratio * len(dataset))
-        train_size = len(dataset) - test_size
-        # calculate the split
-        train, test = random_split(
-            dataset, [train_size, test_size], generator=Generator().manual_seed(RANDOM_SPLIT_SEED))
-        return train, test
-
-    def get_finetuning_datasets(
-            self, tilt_dataset) -> Tuple[TiltFinetuningDataset, TiltFinetuningDataset, TiltFinetuningDataset]:
-
-        if self.split_ratio:
-            train_ds, val_test_ds = self.get_train_test_split(tilt_dataset, self.split_ratio)
-            train_ft_ds = TiltFinetuningDataset(train_ds)
-            if self.val:
-                val_ds, test_ds = self.get_train_test_split(val_test_ds, 0.5)
-                val_ft_ds = TiltFinetuningDataset(val_ds)
-                test_ft_ds = TiltFinetuningDataset(test_ds)
-            else:
-                val_ft_ds = None
-                test_ft_ds = TiltFinetuningDataset(val_test_ds)
+    def _perform_splitting(self, dataset: TiltDataset) -> Tuple[List]:
+        index = list(range(len(dataset)))
+        train, test = train_test_split(index, test_size=self.split_ratio)
+        if self.val:
+            val, test = train_test_split(test, test_size=0.5)
+            return train, val, test
         else:
-            train_ft_ds = TiltFinetuningDataset(tilt_dataset)
-            val_ft_ds = None
-            test_ft_ds = None
+            return train, test
 
-        return train_ft_ds, val_ft_ds, test_ft_ds
+    def _create_dataloader(self, dataset: TiltDataset) -> DataLoader:
+        sampler = self._create_sampler(dataset)
+        loader = DataLoader(dataset=dataset, batch_size=self.batch_size, sampler=sampler)
+        return loader
+
+    def _create_sampler(self, dataset: TiltDataset) -> WeightedRandomSampler:
+        class_weights = [
+            1/torch.sum(dataset.labels == label).float() for label in dataset.labels.unique(sorted=True)]
+        sample_weights = torch.tensor([class_weights[t.int()] for t in dataset.labels])
+        return WeightedRandomSampler(sample_weights, num_samples=sample_weights.shape[0])
+
+    def _apply_splitted_idx(self, dataset: TiltDataset, split_idx_list: List) -> List[TiltDataset]:
+        dataset_list = []
+        for split_idx in split_idx_list:
+            dataset_dict = dataset[split_idx]
+            labels = dataset_dict.pop("labels")
+            dataset_list.append(TiltDataset(sentences=dataset_dict, labels=labels))
+        return dataset_list
