@@ -1,7 +1,6 @@
 import torch
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
-from tiltify.objectives.bert_objective.bert_sampler import BERTSampler
 from typing import Tuple, List
 from sklearn.model_selection import train_test_split
 
@@ -37,7 +36,7 @@ class BERTSplitter:
         loader = DataLoader(dataset=dataset, batch_size=self.batch_size, sampler=sampler)
         return loader
 
-    def _create_sampler(self, dataset: TiltDataset) -> BERTSampler:
+    def _create_sampler(self, dataset: TiltDataset) -> WeightedRandomSampler:
         class_weights = [
             1/torch.sum(dataset.labels == label).float() for label in dataset.labels.unique(sorted=True)]
         sample_weights = torch.tensor([class_weights[t.int()] for t in dataset.labels])
