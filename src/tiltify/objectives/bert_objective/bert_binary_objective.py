@@ -49,8 +49,8 @@ class BERTBinaryObjective(Objective):
         self.model.train()
         for epoch in tqdm.tqdm(range(hyperparameters["num_train_epochs"])):
             for batch in self.train_dataloader:
-                labels = batch.pop("labels")
                 batch = {k: v.to(self.device) for k, v in batch.items()}
+                labels = batch.pop("labels")
                 outputs = model(**batch)
                 loss = criterion(outputs.logits.max(dim=1)[0], labels)
                 loss.backward()
