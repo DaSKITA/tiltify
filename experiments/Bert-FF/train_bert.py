@@ -8,14 +8,14 @@ from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryOb
 from tiltify.objectives.bert_objective.bert_splitter import BERTSplitter
 
 
-# @click.command()
-# @click.option('--binary', default=False, help='Using this argument invokes the binary classification of RightTo\
-# examples in general, instead of classifying them distinctly.', is_flag=True)
-# @click.option("--k", default=1, type=int, help="Number of Experiment repitions")
-# @click.option("--trials", default=50, type=int, help="Number of Hyperparameter Settings to run")
-# @click.option("--num_processes", default=None, type=int, help="Number of processes for  running the experiment.")
-# @click.option("--batch_size", default=32, type=int, help="Batch Size")
-# @click.option("--split_ratio", default=0.4, type=float, help="Split ratio between [test, val] and train.")
+@click.command()
+@click.option('--binary', default=False, help='Using this argument invokes the binary classification of RightTo\
+examples in general, instead of classifying them distinctly.', is_flag=True)
+@click.option("--k", default=1, type=int, help="Number of Experiment repitions")
+@click.option("--trials", default=50, type=int, help="Number of Hyperparameter Settings to run")
+@click.option("--num_processes", default=None, type=int, help="Number of processes for  running the experiment.")
+@click.option("--batch_size", default=32, type=int, help="Batch Size")
+@click.option("--split_ratio", default=0.4, type=float, help="Split ratio between [test, val] and train.")
 def train_bert(binary, k, trials, batch_size, split_ratio, num_processes):
     exp_dir = os.path.dirname(os.path.abspath(__file__))
     # document_collection = DocumentCollection.from_json_files()
@@ -36,4 +36,4 @@ def train_bert(binary, k, trials, batch_size, split_ratio, num_processes):
 
 
 if __name__ == "__main__":
-    train_bert(k=1, trials=1, batch_size=4, split_ratio=0.4, binary=True, num_processes=1)
+    train_bert()
