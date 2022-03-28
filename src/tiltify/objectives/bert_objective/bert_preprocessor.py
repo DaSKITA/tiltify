@@ -1,10 +1,8 @@
 from typing import Dict, List
 from torch.utils.data import Dataset
-from torch import Tensor
+import torch
 from transformers import BertTokenizer, BatchEncoding
-from collections import defaultdict
 import pandas as pd
-import random
 
 from tiltify.config import LABEL_REPLACE, BASE_BERT_MODEL
 from tiltify.preprocessor import Preprocessor
@@ -40,7 +38,7 @@ class TiltDataset(Dataset):
         sentence at index idx
     """
 
-    def __init__(self, data, binary=False):
+    def __init__(self, sentences: Dict, labels: List):
         """
         Parameters
         ----------
@@ -48,16 +46,16 @@ class TiltDataset(Dataset):
             a dict containing both the padded and tokenized
             sentences and the ids of those sentences
         """
-
-        self.sentences = data['sentences']
-        self.id = Tensor(data['id'])
-        self.labels = data["labels"]
+        self.input_ids = sentences["input_ids"]
+        self.attention_mask = sentences["attention_mask"]
+        self.token_type_ids = sentences["token_type_ids"]
+        self.labels = torch.Tensor(labels)
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
-        return len(self.id)
+        return self.input_ids.shape[0]
 
-    def __getitem__(self, idx) -> Dict:
+    def __getitem__(self, idx: int) -> Dict:
         """returns the tokenized sentence and the id of the sentence at index idx
 
         Parameters
@@ -65,37 +63,33 @@ class TiltDataset(Dataset):
         idx : int
             specifies the index of the data to be returned
         """
-
-        item = {key: val[idx, :] for key, val in self.sentences.items()}
-        item['id'] = self.id[idx]
-
-        # add target values if existent
-        if self.labels:
-            item['label'] = self.labels[idx]
-
-        return item
+        output_dict = dict(
+            input_ids=self.input_ids[idx],
+            attention_mask=self.attention_mask[idx],
+            token_type_ids=self.token_type_ids[idx]
+        )
+        if self.labels is not None:
+            output_dict["labels"] = self.labels[idx]
+        return output_dict
 
 
 class BERTPreprocessor(Preprocessor):
 
     def __init__(
-        self, bert_model: str = None, binary: bool = False, n_upsample: float = None,
-            n_downsample: float = None) -> None:
+            self, bert_model: str = None, binary: bool = False) -> None:
         if bert_model:
             self.bert_model = bert_model
         else:
             self.bert_model = BASE_BERT_MODEL
         self.binary = binary
-        self.n_upsample = n_upsample
-        self.n_downsample = n_downsample
 
     def preprocess(self, document_collection: DocumentCollection):
         tilt_dataset = self._create_tilt_dataset(document_collection)
         return tilt_dataset
 
-    def preprocess_pandas(self, pandas_path):
-        """This function needs to be deleted when pandas is not needed anymore.
-
+    def preprocess_pandas(self, pandas_path: str):
+        """
+        This function needs to be deleted when pandas is not needed anymore.
         Args:
             pandas_path (_type_): _description_
         """
@@ -106,34 +100,20 @@ class BERTPreprocessor(Preprocessor):
         if labels == []:
             labels = None
         labels = self._prepare_labels(labels)
-
-        if self.n_upsample:
-            sentences, labels = self.upsample(sentences, labels)
-        if self.n_downsample:
-            sentences, labels = self.downsample(sentences, labels)
-
-        sent_ids = [idx for idx in range(len(sentences))]
         sentences_tokenized = self._tokenize_sentences(sentences)
-
-        # saving the ids and tokenized sentences into the according dataset object
-        test_data_dict = {'id': sent_ids, 'sentences': sentences_tokenized, "labels": labels}
-        return TiltDataset(test_data_dict, binary=self.binary)
+        return TiltDataset(sentences=sentences_tokenized, labels=labels)
 
     def _create_tilt_dataset(self, document_collection: DocumentCollection):
-        dataset_dict = defaultdict(list)
+        sentences = []
+        labels = []
+        # TODO: adjust this one as tokenized sentences appended might cause bugs, also adjust for per document preds
         for document in document_collection:
             labels = self._get_labels(document.blobs)
             sentences = document.blobs
-            if self.upsample:
-                sentences, labels = self.upsample(sentences, labels)
-            if self.downsample:
-                sentences, labels = self.downsample(sentences, labels)
             tokenized_sentences = self._tokenize_sentences(sentences)
-
-            dataset_dict["sentences"].append(tokenized_sentences)
-            dataset_dict["labels"].append(labels)
-        dataset_dict["id"] = [idx for idx in range(len(dataset_dict["sentence"]))]
-        return TiltDataset(dataset_dict, binary=self.binary)
+            sentences.append(tokenized_sentences)
+            labels.append(labels)
+        return TiltDataset(sentences, labels)
 
     def _tokenize_sentences(self, sentences: List[str]) -> BatchEncoding:
         """Tokenizes and pads a list of sentences using the model specified.
@@ -163,22 +143,7 @@ class BERTPreprocessor(Preprocessor):
         labels = [blob.get_annotations()[0] for blob in document_blobs]
         return labels
 
-    def upsample(self, sentences, labels):
-        minority = [idx for idx, label in enumerate(labels) if label == 1]
-        upsampled_minorities = random.choices(minority, k=int(self.n_upsample * len(minority)))
-        sentences += [sentences[idx] for idx in upsampled_minorities]
-        labels += [labels[idx] for idx in upsampled_minorities]
-        return sentences, labels
-
-    def downsample(self, sentences, labels):
-        majority = [idx for idx, label in enumerate(labels) if label == 0]
-        minority = [idx for idx, label in enumerate(labels) if label == 1]
-        downsampled_majorities = random.choices(majority, k=int(self.n_downsample* len(majority)))
-        sentences = [sentences[idx] for idx in downsampled_majorities] + [sentences[idx] for idx in minority]
-        labels = [labels[idx] for idx in downsampled_majorities] + [labels[idx] for idx in minority]
-        return sentences, labels
-
-    def _prepare_labels(self, labels):
+    def _prepare_labels(self, labels: List):
         if self.binary:
             label_data = [0 if entry == "None" else 1 for entry in labels]
         else:
