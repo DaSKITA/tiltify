@@ -14,7 +14,7 @@ examples in general, instead of classifying them distinctly.', is_flag=True)
 @click.option("--k", default=1, type=int, help="Number of Experiment repitions")
 @click.option("--trials", default=50, type=int, help="Number of Hyperparameter Settings to run")
 @click.option("--num_processes", default=None, type=int, help="Number of processes for  running the experiment.")
-@click.option("--batch", default=32, type=int, help="Batch Size")
+@click.option("--batch_size", default=32, type=int, help="Batch Size")
 @click.option("--split_ratio", default=0.4, type=float, help="Split ratio between [test, val] and train.")
 def train_bert(binary, k, trials, batch_size, split_ratio, num_processes):
     exp_dir = os.path.dirname(os.path.abspath(__file__))
