@@ -62,7 +62,7 @@ class BERTBinaryObjective(Objective):
         val_preds = []
         self.model.eval()
         for batch in self.val_dataloader:
-            val_labels += batch["label"].tolist()
+            val_labels += batch.pop("labels").tolist()
             batch = {k: v.to(self.device) for k, v in batch.items()}
             with torch.no_grad():
                 output = self.model(**batch)
@@ -78,7 +78,7 @@ class BERTBinaryObjective(Objective):
         test_preds = []
         self.model.eval()
         for batch in self.test_dataloader:
-            test_labels += batch["label"].tolist()
+            test_labels += batch.pop("labels").tolist()
             batch = {k: v.to(self.device) for k, v in batch.items()}
             with torch.no_grad():
                 output = self.model(**batch)
