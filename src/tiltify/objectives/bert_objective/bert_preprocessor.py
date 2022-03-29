@@ -109,9 +109,9 @@ class BERTPreprocessor(Preprocessor):
         # TODO: adjust this one as tokenized sentences appended might cause bugs, also adjust for per document preds
         for document in document_collection:
             labels = self._get_labels(document.blobs)
-            sentences = document.blobs
-            tokenized_sentences = self._tokenize_sentences(sentences)
-            sentences.append(tokenized_sentences)
+            sentence = document.blobs
+            tokenized_sentence = self._tokenize_sentences(sentence)
+            sentences.append(tokenized_sentence)
             labels.append(labels)
         return TiltDataset(sentences, labels)
 
