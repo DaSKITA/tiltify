@@ -1,6 +1,6 @@
 import os
 
-from tiltify.extractors.blob_extractor import BlobExtractor, BlobExtractorMetaClass
+from tiltify.extractors.extractor import Extractor, ExtractorMetaclass
 from tiltify.data_structures.document import Document
 from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
 from tiltify.objectives.bert_objective.bert_splitter import BERTSplitter
@@ -8,10 +8,10 @@ from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryOb
 from tiltify.config import BASE_BERT_MODEL, Path
 
 
-class BinaryBERTExtractor(BlobExtractor, metalass=BlobExtractorMetaClass):
+class BinaryBERTExtractor(Extractor):
 
-    def __init__(self, testarg) -> None:
-        self.testarg = testarg
+    def __init__(self) -> None:
+        pass
 
     def train(self):
         # document_collection = DocumentCollection.from_json_files()
@@ -28,6 +28,8 @@ class BinaryBERTExtractor(BlobExtractor, metalass=BlobExtractorMetaClass):
     def predict(self, document: Document):
         return super().predict(document)
 
+    def load(self):
+        pass
 
 
 if __name__ == "__main__":
