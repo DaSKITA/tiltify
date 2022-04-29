@@ -6,8 +6,8 @@ from rapidflow.experiments.experiment import Experiment
 from tiltify.config import BASE_BERT_MODEL, Path
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.objectives.w2v_nb_objective.w2v_nb_preprocessor import W2VPreprocessor
+from tiltify.objectives.w2v_nb_objective.w2v_nb_splitter import W2VSplitter
 from tiltify.objectives.w2v_nb_objective.w2v_nb_objective import W2VBinaryObjective, W2VRightToObjective
-from tiltify.splitter import Splitter
 
 
 @click.command()
@@ -34,7 +34,7 @@ def train_w2v(binary, debug, k, trials, batch_size, split_ratio, num_processes):
         document_collection = DocumentCollection.from_json_files()
     preprocessor = W2VPreprocessor(binary=binary)
     preprocessed_dataset = preprocessor.preprocess(document_collection=document_collection)
-    splitter = Splitter(split_ratio=split_ratio, val=True)
+    splitter = W2VSplitter(split_ratio=split_ratio, val=True)
     train, val, test = splitter.split(preprocessed_dataset)
     experiment = Experiment(experiment_path=exp_dir, title="Binary-Classification", model_name="W2V-NB")
 

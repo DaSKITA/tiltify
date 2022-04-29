@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 
 class Splitter:
 
-    def __init__(self, val: bool = False, split_ratio: bool = None) -> None:
+    def __init__(self, val: float = False, split_ratio: bool = None) -> None:
         self.split_ratio = split_ratio
         self.val = val
 
