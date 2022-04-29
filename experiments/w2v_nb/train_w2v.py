@@ -28,7 +28,7 @@ def train_w2v(binary, debug, k, trials, batch_size, split_ratio, num_processes):
         for file_name in file_names:
             with open(os.path.join(data_loading_path, file_name), "r") as f:
                 loaded_policies.append(json.load(f))
-        document_list = [DocumentCollection.json_parser.parse(**json_policy["document"]) for json_policy in loaded_policies]
+        document_list = [DocumentCollection.json_parser.parse(**json_policy["document"], annotations=json_policy["annotations"]) for json_policy in loaded_policies]
         document_collection = DocumentCollection(document_list)
     else:
         document_collection = DocumentCollection.from_json_files()
