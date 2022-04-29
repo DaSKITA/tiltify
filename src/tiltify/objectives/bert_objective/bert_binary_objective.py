@@ -1,4 +1,5 @@
 from typing import Dict
+
 import torch
 from rapidflow.metrics_handler import MetricsHandler
 from rapidflow.objective import Objective
@@ -25,6 +26,7 @@ class BERTBinaryObjective(Objective):
         self.train_dataloader, self.val_dataloader, self.test_dataloader = \
             train_dataloader, val_dataloader, test_dataloader
         self.labels = 2
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def train(self, trial=None) -> Dict:
         hyperparameters = dict(
@@ -33,11 +35,9 @@ class BERTBinaryObjective(Objective):
             weight_decay=trial.suggest_float("weight_decay", 1e-7, 1e-5, log=True),
         )
         num_training_steps = hyperparameters["num_train_epochs"] * len(self.train_dataloader)
-        metrics_handler = MetricsHandler()
         # model setup
         model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=self.labels)
         self.track_model(model, hyperparameters)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
         criterion = torch.nn.BCEWithLogitsLoss()
         optimizer = AdamW(

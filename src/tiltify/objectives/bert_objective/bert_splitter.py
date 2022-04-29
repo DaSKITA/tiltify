@@ -1,15 +1,17 @@
+from typing import Tuple, List
+
 import torch
 from torch.utils.data import DataLoader, WeightedRandomSampler
-from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
-from typing import Tuple, List
 from sklearn.model_selection import train_test_split
 
+from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
+from tiltify.splitter import Splitter
 
-class BERTSplitter:
+
+class BERTSplitter(Splitter):
 
     def __init__(self, val: float = False, split_ratio: bool = None, batch_size: int = None) -> None:
-        self.split_ratio = split_ratio
-        self.val = val
+        super().__init__(val, split_ratio)
         if batch_size:
             self.batch_size = batch_size
 
