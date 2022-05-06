@@ -23,7 +23,7 @@ def train_w2v(binary, debug, k, trials, batch_size, split_ratio, num_processes):
     exp_dir = os.path.dirname(os.path.abspath(__file__))
     if debug:
         data_loading_path = os.path.join(DocumentCollection.data_loader.data_path, "annotated_policies")
-        file_names = [file_name for file_name in os.listdir(data_loading_path) if file_name.endswith(".json")][:20]
+        file_names = [file_name for file_name in os.listdir(data_loading_path) if file_name.endswith(".json")][:10]
         loaded_policies = []
         for file_name in file_names:
             with open(os.path.join(data_loading_path, file_name), "r") as f:
@@ -34,7 +34,7 @@ def train_w2v(binary, debug, k, trials, batch_size, split_ratio, num_processes):
         document_collection = DocumentCollection.from_json_files()
     preprocessor = W2VPreprocessor(binary=binary)
     preprocessed_dataset = preprocessor.preprocess(document_collection=document_collection)
-    splitter = W2VSplitter(split_ratio=split_ratio, val=True)
+    splitter = W2VSplitter(split_ratio=split_ratio, val=True, batch_size=batch_size)
     train, val, test = splitter.split(preprocessed_dataset)
     experiment = Experiment(experiment_path=exp_dir, title="Binary-Classification", model_name="W2V-NB")
 

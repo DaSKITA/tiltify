@@ -2,6 +2,8 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import spacy
+import torch
+from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 
 from tiltify.config import LABEL_REPLACE
@@ -38,12 +40,13 @@ class W2VDataset(Dataset):
         Parameters
         ----------
         sentences : List
-            a List containing the word2vec embeddings
+            a (n, 300) List containing the word2vec embeddings as torch.Tensor
         labels : List
-            a List containing the labels related to sentences
+            a (n, 1) List containing the labels related to the sentence embeddings
         """
-        self.sentences = sentences
-        self.labels = labels
+        assert len(sentences) == len(labels)
+        self.sentences = torch.stack(sentences) if not isinstance(sentences, torch.Tensor) else sentences
+        self.labels = torch.Tensor(labels) if not isinstance(labels, torch.Tensor) else labels #pad_sequence([torch.Tensor(sentence_labels) for sentence_labels in labels])
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
@@ -57,12 +60,10 @@ class W2VDataset(Dataset):
         idx : int
             specifies the index of the data to be returned
         """
-        output_dict = dict(
-            sentence=self.sentences[idx]
+        return dict(
+            sentences=self.sentences[idx],
+            labels=self.labels[idx]
         )
-        if self.labels is not None:
-            output_dict["labels"] = self.labels[idx]
-        return output_dict
 
 
 class W2VPreprocessor(Preprocessor):
@@ -87,15 +88,20 @@ class W2VPreprocessor(Preprocessor):
         label_list = []
         # TODO: adjust this one as tokenized sentences appended might cause bugs, also adjust for per document preds
         for document in document_collection:
-            sentences = document.blobs
-            vectorized_sentences = self._vectorize_sentences(sentences)
-            labels = self._get_labels(sentences)
+            document_blobs = document.blobs
+            vectorized_sentences = self._vectorize_document(document_blobs)
+            labels = self._get_labels(document_blobs)
             sentence_list.append(vectorized_sentences)
             label_list.append(self._prepare_labels(labels))
+
+        # flatten lists
+        sentence_list = [sentence for document in sentence_list for sentence in document]
+        label_list = [label for document in label_list for label in document]
+
         return W2VDataset(sentence_list, label_list)
 
-    def _vectorize_sentences(self, sentences: List[Blob]) -> List[np.ndarray]:
-        """Tokenizes and pads a list of sentences using the model specified.
+    def _vectorize_document(self, document_blobs: List[Blob]) -> torch.Tensor:
+        """Tokenizes and pads a list of sentences using spacy.
 
         Parameters
         ----------
@@ -110,12 +116,12 @@ class W2VPreprocessor(Preprocessor):
 
         """
         vectors = []
-        for blob in sentences:
-            sentence = self.nlp(blob.text)
+        for blob in document_blobs:
+            blob_text = self.nlp(blob.text)
             if self.remove_stopwords:
-                sentence = self.nlp(" ".join([str(word) for word in sentence if str(word) not in self.nlp.Defaults.stop_words]))
-            vectors.append(sentence.vector)
-        return vectors
+                blob_text = self.nlp(" ".join([str(word) for word in blob_text if str(word) not in self.nlp.Defaults.stop_words]))
+            vectors.append(torch.Tensor(blob_text.vector))
+        return torch.stack(vectors, dim=0)
 
     def _get_labels(self, document_blobs: List[Blob]) -> List[str]:
         # TODO: case where one blob has multiple annotations -> needs to be accessed in the model

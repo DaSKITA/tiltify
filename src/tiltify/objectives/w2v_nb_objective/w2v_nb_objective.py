@@ -19,7 +19,7 @@ class W2VBinaryObjective(Objective):
 
     def train(self, trial=None) -> Dict:
         # Hyperparameter setup
-        first_class_prior = trial.suggest_float("priors", 0.8, 0.99, log=True)
+        first_class_prior = trial.suggest_float("priors", 0.8, 0.95, log=True)
         hyperparameters = dict(
             priors=[first_class_prior, 1 - first_class_prior],
             num_train_epochs=100
@@ -30,15 +30,14 @@ class W2VBinaryObjective(Objective):
         self.track_model(model, hyperparameters)
         for epoch in tqdm.tqdm(range(hyperparameters["num_train_epochs"])):
             for batch in self.train_dataloader:
-                labels = batch["labels"]
-                self.model.partial_fit(batch["sentence"], labels, classes=np.array(range(self.labels)))
+                self.model.partial_fit(X=batch["sentences"], y=batch["labels"], classes=np.array(range(self.labels)))
 
         # Validation
         val_labels = []
         val_preds = []
         for batch in self.val_dataloader:
             val_labels += batch["labels"]
-            predictions = self.model.predict(batch["sentence"])
+            predictions = self.model.predict(batch["sentences"])
             val_preds += predictions.tolist()
         metrics_handler = MetricsHandler()
         metrics = metrics_handler.calculate_classification_metrics(val_labels, val_preds)
@@ -49,7 +48,7 @@ class W2VBinaryObjective(Objective):
         test_preds = []
         for batch in self.test_dataloader:
             test_labels += batch["labels"]
-            test_preds += self.model.predict(batch["sentence"]).tolist()
+            test_preds += self.model.predict(batch["sentences"]).tolist()
         metrics_handler = MetricsHandler()
         metrics = metrics_handler.calculate_classification_metrics(test_labels, test_preds)
         return metrics
