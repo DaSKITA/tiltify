@@ -19,7 +19,7 @@ class W2VBinaryObjective(Objective):
 
     def train(self, trial=None) -> Dict:
         # Hyperparameter setup
-        first_class_prior = trial.suggest_float("priors", 0.8, 0.95, log=True)
+        first_class_prior = trial.suggest_float("priors", 0.5, 0.95, log=True)
         hyperparameters = dict(
             priors=[first_class_prior, 1 - first_class_prior],
             num_train_epochs=100
