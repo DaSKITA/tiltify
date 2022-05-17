@@ -11,26 +11,4 @@ def text_example():
 
 
 class TestBERTPreprocessor:
-
-    def test_upsample(self, text_example):
-        sentences, labels = text_example
-        n_examples = len(sentences)
-        preprocessor = BERTPreprocessor(n_upsample=0.5)
-
-        sentences, labels = preprocessor.upsample(sentences, labels)
-
-        # assert
-        assert len(sentences) > n_examples
-        assert len(labels) > n_examples
-
-    def test_downsample(self, text_example):
-        sentences, labels = text_example
-        n_examples = len(sentences)
-        preprocessor = BERTPreprocessor(n_downsample=0.5)
-
-        sentences, labels = preprocessor.downsample(sentences, labels)
-
-        # assert
-        assert len(sentences) < n_examples
-        assert len(labels) < n_examples
-
+    pass
