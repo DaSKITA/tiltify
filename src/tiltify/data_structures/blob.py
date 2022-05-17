@@ -19,6 +19,7 @@ class Blob:
             self.annotations = annotations
         else:
             self.annotations = []
+        self.prediction_annotations = []
 
     def add_annotation(self, annotation: Union[Annotation, List[Annotation]]):
         if isinstance(annotation, list):
@@ -28,3 +29,12 @@ class Blob:
 
     def get_annotations(self) -> List[str]:
         return [annotation for annotation in self.annotations]
+
+    def add_prediction_annotation(self, annotation: Union[Annotation, List[Annotation]]):
+        if isinstance(annotation, list):
+            self.prediction_annotations += annotation
+        else:
+            self.prediction_annotations.append(annotation)
+
+    def get_prediction_annotations(self) -> List[str]:
+        return [annotation for annotation in self.prediction_annotations]

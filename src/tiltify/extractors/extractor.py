@@ -27,33 +27,29 @@ class ExtractorMetaClass(type):
         return instance
 
 
-class ExtractorCombinedMeta(ABCMeta, ExtractorMetaClass):
+class ModelCombinedMeta(ABCMeta, ExtractorMetaClass):
     """
-    ABC Object generally use ABCMeta for
+    ABC Objects generally use ABCMeta for
     initialization. The ExtractorMetaclass sets default values for every Class that inherits from Extractor as
     the initialization method of the class is changed again through this metaclass. The combined object is
     needed to meet the requirements of ABC and add additional functionality of ExtractorMetaClass."""
     pass
 
 
-class Extractor(ABC, metaclass=ExtractorCombinedMeta):
-    """Serves as an Interface for Extractors.
+class Extractor:
 
-    Args:
-        ABC (_type_): _description_
-        metaclass (_type_, optional): _description_. Defaults to ExtractorCombinedMeta.
-    """
+    model_registry = {
 
-    exp_dir = None
+    }
 
-    @abstractmethod
-    def predict(self, document: Document):
-        pass
+    def __init__(self, model_str: str = None) -> None:
+        model_cls = self.model_registry[model_str]  # use an enum
+        self.exp_dir = os.path.join(Path.experiment_path, model_cls.__name__)
 
-    @abstractmethod
+    def extract(self, document: Document) -> Document:
+        predicted_doc = self.model.predict(document)
+        return predicted_doc
+
     def train(self):
-        pass
-
-    @abstractmethod
-    def load(self):
+        # happens on another machine
         pass

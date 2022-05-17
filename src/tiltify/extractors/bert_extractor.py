@@ -1,29 +1,35 @@
-import os
-
-from tiltify.extractors.extractor import Extractor, ExtractorMetaclass
+from tiltify.extractors.extractor import Extractor
 from tiltify.data_structures.document import Document
+from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
 from tiltify.objectives.bert_objective.bert_splitter import BERTSplitter
 from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective
-from tiltify.config import BASE_BERT_MODEL, Path
+from tiltify.config import BASE_BERT_MODEL
+from rapidflow.experiments.experiment import Experiment
 
+
+# TODO: should be a generic class that is created via components
 
 class BinaryBERTExtractor(Extractor):
 
     def __init__(self) -> None:
-        pass
-
-    def train(self):
-        # document_collection = DocumentCollection.from_json_files()
-        pandas_path = os.path.join(Path.data_path, "de_sentence_data.csv")
-        preprocessor = BERTPreprocessor(
+        self.preprocessor = BERTPreprocessor(
             bert_model=BASE_BERT_MODEL, binary=True)
-        preprocessed_dataaset = preprocessor.preprocess_pandas(pandas_path=pandas_path)
+        self.title = "Binary Classification"
+        # self.model_name = self.model.__class__.__name__
+        self.model = None
+
+    def train(
+            self, document_collection: DocumentCollection, split_ratio, batch_size, k, trials, num_processes):
+        # TODO: maybe this can be more generic
+        # TODO: change processing for document collection
+        preprocessed_dataset = self.preprocessor.preprocess(document_collection=document_collection)
         bert_splitter = BERTSplitter(val=True, split_ratio=split_ratio, batch_size=batch_size)
-        train, val, test = bert_splitter.split(preprocessed_dataaset)
-        experiment = Experiment(experiment_path=self.exp_dir, title="Binary-Classification", model_name="Bert-FF")
+        train, val, test = bert_splitter.split(preprocessed_dataset)
+        experiment = Experiment(
+            experiment_path=self.exp_dir, title=self.title, model_name=self.model_name)
         experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
-        experiment.run(k=k, trials=trials, num_processes=num_processes)
+        return experiment
 
     def predict(self, document: Document):
         return super().predict(document)

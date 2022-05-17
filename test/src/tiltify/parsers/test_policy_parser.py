@@ -1,7 +1,6 @@
 import json
 import os
 import pytest
-from os.path import dirname as dn
 
 from tiltify.data_structures.annotation import Annotation
 from tiltify.data_structures.blob import Blob
