@@ -2,12 +2,11 @@ from typing import Dict, List
 from torch.utils.data import Dataset
 import torch
 from transformers import BertTokenizer, BatchEncoding
-import pandas as pd
 
-from tiltify.config import LABEL_REPLACE, BASE_BERT_MODEL
-from tiltify.preprocessor import Preprocessor
+from tiltify.config import BASE_BERT_MODEL
+from tiltify.preprocessing.preprocessor import Preprocessor
 from tiltify.data_structures.document_collection import DocumentCollection
-from tiltify.data_structures.blob import Blob
+from tiltify.data_structures.document import Document
 
 
 class TiltDataset(Dataset):
@@ -21,13 +20,13 @@ class TiltDataset(Dataset):
     ----------
     st : BatchEncoding
         huggingface transformers data structure which contains
-        the padded and tokenized sentences
+        the padded and tokenized blobs
     id : Tensor
         a Tensor containing all the sentence ids related to the
-        padded and tokenized sentences in st
+        padded and tokenized blobs in st
     labels : Tensor
         a Tensor containing all the target values related to the
-        padded and tokenized sentences in st
+        padded and tokenized blobs in st
 
     Methods
     -------
@@ -38,17 +37,17 @@ class TiltDataset(Dataset):
         sentence at index idx
     """
 
-    def __init__(self, sentences: Dict, labels: List):
+    def __init__(self, blobs: Dict, labels: List):
         """
         Parameters
         ----------
         data : Dict
             a dict containing both the padded and tokenized
-            sentences and the ids of those sentences
+            blobs and the ids of those blobs
         """
-        self.input_ids = sentences["input_ids"]
-        self.attention_mask = sentences["attention_mask"]
-        self.token_type_ids = sentences["token_type_ids"]
+        self.input_ids = blobs["input_ids"]
+        self.attention_mask = blobs["attention_mask"]
+        self.token_type_ids = blobs["token_type_ids"]
         self.labels = torch.Tensor(labels)
 
     def __len__(self) -> int:
@@ -81,47 +80,63 @@ class BERTPreprocessor(Preprocessor):
             self.bert_model = bert_model
         else:
             self.bert_model = BASE_BERT_MODEL
+        self.bert_tokenizer = BertTokenizer.from_pretrained(self.bert_model)
         self.binary = binary
 
     def preprocess(self, document_collection: DocumentCollection):
-        tilt_dataset = self._create_tilt_dataset(document_collection)
-        return tilt_dataset
+        """This preprocessing function creates a corpus where all documents form a list of sentences and labels.
+        Documents are not provided by document for document. The document level representation is not used.
 
-    def preprocess_pandas(self, pandas_path: str):
-        """
-        This function needs to be deleted when pandas is not needed anymore.
         Args:
-            pandas_path (_type_): _description_
+            document_collection (DocumentCollection): _description_
+
+        Returns:
+            _type_: _description_
         """
-        df_dataset = pd.read_csv(pandas_path)
-        sentences = list(df_dataset['sentence'])
-        # get target values if is training dataset
-        labels = df_dataset.get("label", None).to_list()
-        if labels == []:
-            labels = None
-        labels = self._prepare_labels(labels)
-        sentences_tokenized = self._tokenize_sentences(sentences)
-        return TiltDataset(sentences=sentences_tokenized, labels=labels)
-
-    def _create_tilt_dataset(self, document_collection: DocumentCollection):
-        sentences = []
-        labels = []
-        # TODO: adjust this one as tokenized sentences appended might cause bugs, also adjust for per document preds
+        preprocessed_corpus = []
+        corpus_labels = []
+        corpus_blobs = []
         for document in document_collection:
-            labels = self._get_labels(document.blobs)
-            sentence = document.blobs
-            tokenized_sentence = self._tokenize_sentences(sentence)
-            sentences.append(tokenized_sentence)
-            labels.append(labels)
-        return TiltDataset(sentences, labels)
+            document_labels = self.label_retriever.retrieve_labels(document.blobs)
+            document_labels = self.prepare_labels(document_labels)
+            corpus_blobs += [blob.text for blob in document.blobs]
+            corpus_labels.append(document_labels)
+        corpus_labels = sum(corpus_labels, [])
+        preprocessed_corpus = self._tokenize_blobs(corpus_blobs)
+        return TiltDataset(preprocessed_corpus, corpus_labels)
 
-    def _tokenize_sentences(self, sentences: List[str]) -> BatchEncoding:
-        """Tokenizes and pads a list of sentences using the model specified.
+    def preprocess_document(self, document: Document):
+        """Used for inference. If a single document is provided this document has to be used for prediction.
+
+        Args:
+            document (Document): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return self._tokenize_blobs([blob.text for blob in document.blobs])
+
+    def prepare_labels(self, labels: List):
+        """Binarize Labels if necessray.
+        Only Labels that are above 1 are matched. As the preprocessor tries to identify relevant blobs.
+
+        Args:
+            labels (List): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        if self.binary:
+            labels = [int(label[0] > 0) for label in labels]
+        return labels
+
+    def _tokenize_blobs(self, blobs: List[str]) -> BatchEncoding:
+        """Tokenizes and pads a list of blobs using the model specified.
 
         Parameters
         ----------
-        sentences : List[str]
-            a list containing all sentences that are to be tokenized
+        blobs : List[str]
+            a list containing all blobs that are to be tokenized
             in this function
         bert_base_model : str
             specifies which huggingface transformers model is to be
@@ -131,21 +146,16 @@ class BERTPreprocessor(Preprocessor):
         -------
         BatchEncoding
             huggingface transformers data structure which contains
-            the padded and tokenized sentences
+            the padded and tokenized blobs
 
         """
+        return self.bert_tokenizer(
+            blobs, padding=True, truncation=True, return_tensors="pt")
 
-        bert_tokenizer = BertTokenizer.from_pretrained(self.bert_model)
-        return bert_tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
 
-    def _get_labels(self, document_blobs: List[Blob]) -> List[int]:
-        # TODO: case where one blob has multiple annotations -> needsto be accessed in the model
-        labels = [blob.get_annotations()[0] for blob in document_blobs]
-        return labels
-
-    def _prepare_labels(self, labels: List):
-        if self.binary:
-            label_data = [0 if entry == "None" else 1 for entry in labels]
-        else:
-            label_data = [LABEL_REPLACE[entry] for entry in labels]
-        return label_data
+if __name__ == "__main__":
+    document_collection = DocumentCollection.from_json_files()
+    preprocessor = BERTPreprocessor(
+        bert_model=BASE_BERT_MODEL, binary=True)
+    preprocessed_dataaset = preprocessor.preprocess(document_collection)
+    print("Done")
