@@ -36,6 +36,7 @@ class BERTBinaryObjective(Objective):
         metrics_handler = MetricsHandler()
         # model setup
         model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=self.labels)
+        # add  custom save strategy to rapidflow
         self.track_model(model, hyperparameters)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
