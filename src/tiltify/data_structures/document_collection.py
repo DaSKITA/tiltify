@@ -50,7 +50,13 @@ class DocumentCollection:
         return document
 
     def __getitem__(self, key) -> Document:
-        return self.documents[key]
+        if isinstance(key, list):
+            selected_collection = []
+            for idx in key:
+                selected_collection.append(self.documents[idx])
+            return selected_collection
+        else:
+            return self.documents[key]
 
     def __iter__(self):
         """Necessary to identify it as an Iterable.
@@ -59,3 +65,6 @@ class DocumentCollection:
             _type_: _description_
         """
         return self
+
+    def __len__(self):
+        return len(self.documents)
