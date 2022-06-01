@@ -1,3 +1,4 @@
+from tkinter import Label
 from typing import Dict, List
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 import torch
@@ -7,6 +8,7 @@ from tiltify.config import BASE_BERT_MODEL
 from tiltify.preprocessing.preprocessor import Preprocessor
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.data_structures.document import Document
+from tiltify.preprocessing.label_retriever import LabelRetriever
 
 
 class TiltDataset(Dataset):
@@ -83,6 +85,7 @@ class BERTPreprocessor(Preprocessor):
         self.bert_tokenizer = BertTokenizer.from_pretrained(self.bert_model)
         self.binary = binary
         self.batch_size = batch_size
+        self.label_retriever = LabelRetriever()
 
     def preprocess(self, document_collection: DocumentCollection):
         """This preprocessing function creates a corpus where all documents form a list of sentences and labels.

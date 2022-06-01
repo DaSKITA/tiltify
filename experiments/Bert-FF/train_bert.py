@@ -20,7 +20,6 @@ examples in general, instead of classifying them distinctly.', is_flag=True)
 def train_bert(binary, k, trials, batch_size, split_ratio, num_processes):
     exp_dir = os.path.dirname(os.path.abspath(__file__))
     document_collection = DocumentCollection.from_json_files()
-    # pandas_path = os.path.join(Path.data_path, "de_sentence_data.csv")
     preprocessor = BERTPreprocessor(
         bert_model=BASE_BERT_MODEL, binary=binary)
     preprocessed_dataaset = preprocessor.preprocess(document_collection)

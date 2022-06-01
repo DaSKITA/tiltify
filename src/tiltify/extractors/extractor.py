@@ -1,18 +1,20 @@
 from abc import ABC, abstractmethod
 import os
+from numpy import extract
 from rapidflow.experiments.experiment import Experiment
 
 from tiltify.data_structures.document import Document
 from tiltify.config import Path
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.preprocessing.document_collection_splitter import DocumentCollectionSplitter
-from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
+
 from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective
-from tiltify.config import BASE_BERT_MODEL
+from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
 
 
 class Extractor(ABC):
 
+    extraction_model_cls = None
     extraction_model = None
 
     @abstractmethod
@@ -32,10 +34,10 @@ class BinaryBERTExtractor(Extractor):
 
     def __init__(self) -> None:
         self.exp_dir = os.path.join(Path.experiment_path)
-        self.extraction_model = None
+        self.extraction_model_cls = BinaryBERTModel
 
     def train(
-            self, k: int, trials: int, num_processes: int, val: bool, split_ratio: float, batch_size: float):
+            self, k: int, trials: int, val: bool, split_ratio: float, num_processes: int = None):
         """
         Train is performed on sentence level.
         Validate and Test is performed on Document Level
@@ -51,17 +53,36 @@ class BinaryBERTExtractor(Extractor):
 
         document_collection = DocumentCollection.from_json_files()
         bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
-        preprocessor = BERTPreprocessor(bert_model=BASE_BERT_MODEL, binary=True, batch_size=batch_size)
         train, val, test = bert_splitter.split(document_collection)
-        val = [preprocessor.preprocess_document(document) for document in val]
-        test = [preprocessor.preprocess_document(document) for document in test]
         experiment = Experiment(
             experiment_path=self.exp_dir, title=self.__class__.__name__,
             model_name=self.extraction_model.__class__.__name__)
         experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
         experiment.run(k=k, trials=trials, num_processes=num_processes)
 
+        self.extraction_model = self.load_best_model()
+
     def predict(self, document: Document):
-        document_predictions = self.extraction_model.predict(document)
+        if self.extraction_model:
+            predicted_annotations = self.extraction_model.predict(document)
+        else:
+            Warning("Modle not loaded!")
         # predicted annotations
         pass
+
+    def load_best_model(self):
+        pass
+
+    def load(self):
+        pass
+
+
+if __name__ == "__main__":
+    extractor = BinaryBERTExtractor()
+    config = {
+        "k": 1,
+        "trials": 1,
+        "val": True,
+        "split_ratio": 0.33,
+    }
+    extractor.train(**config)

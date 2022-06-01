@@ -10,3 +10,7 @@ class ExtractionModel(ABC):
     @abstractmethod
     def predict(self):
         pass
+
+    @abstractmethod
+    def save(self):
+        pass
