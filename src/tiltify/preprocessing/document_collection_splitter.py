@@ -12,13 +12,9 @@ class DocumentCollectionSplitter:
         self.val = val
 
     def split(self, document_collection: DocumentCollection):
-        loader_list = []
         split_idx_list = self._perform_splitting(document_collection)
         set_list = self._apply_splitted_idx(document_collection, split_idx_list)
-        for split_set in set_list:
-            if split_set:
-                loader_list.append(self._create_dataloader(split_set))
-        return loader_list
+        return set_list
 
     def _perform_splitting(self, document_collection: DocumentCollection) -> Tuple[List]:
         index = list(range(len(document_collection)))
@@ -35,3 +31,11 @@ class DocumentCollectionSplitter:
             subset = document_collection[split_idx]
             dataset_list.append(subset)
         return dataset_list
+
+
+if __name__ == "__main__":
+    document_collection = DocumentCollection.from_json_files()
+    document_collection = DocumentCollection.from_json_files()
+    bert_splitter = DocumentCollectionSplitter(val=True, split_ratio=0.33)
+    train, val, test = bert_splitter.split(document_collection)
+    print([len(dataset) for dataset in [train, val, test]])
