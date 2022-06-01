@@ -1,19 +1,17 @@
 from typing import Dict
-import torch
 from rapidflow.metrics_handler import MetricsHandler
 from rapidflow.objective import Objective
-from transformers import BertForSequenceClassification, get_scheduler
-from torch.optim import AdamW
-import tqdm
 
-from tiltify.config import BASE_BERT_MODEL
-from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
+from tiltify.data_structures.document_collection import DocumentCollection
+from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
+from tiltify.preprocessing.label_retriever import LabelRetriever
 
 
 class BERTBinaryObjective(Objective):
 
     def __init__(
-            self, train_dataloader: TiltDataset, val_dataloader: TiltDataset, test_dataloader: TiltDataset):
+            self, train_collection: DocumentCollection, val_collection: DocumentCollection,
+            test_collection: DocumentCollection):
         """https://huggingface.co/docs/transformers/training
 
         Args:
@@ -22,54 +20,36 @@ class BERTBinaryObjective(Objective):
             test_dataset (TiltDataset): _description_
         """
         super().__init__()
-        self.train_dataloader, self.val_dataloader, self.test_dataloader = \
-            train_dataloader, val_dataloader, test_dataloader
-        self.labels = 2
+        self.train_collection, self.val_collection, self.test_collection = \
+            train_collection, val_collection, test_collection
 
     def train(self, trial=None) -> Dict:
         hyperparameters = dict(
             learning_rate=trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True),
-            num_train_epochs=5,
+            num_train_epochs=1,
             weight_decay=trial.suggest_float("weight_decay", 1e-7, 1e-5, log=True),
+            batch_size=2
         )
-        num_training_steps = hyperparameters["num_train_epochs"] * len(self.train_dataloader)
         metrics_handler = MetricsHandler()
         # model setup
-        model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=self.labels)
+        model = BinaryBERTModel(learning_rate=hyperparameters["learning_rate"],
+                                weight_decay=hyperparameters["weight_decay"],
+                                num_train_epochs=hyperparameters["num_train_epochs"],
+                                batch_size=hyperparameters["batch_size"])
         # add  custom save strategy to rapidflow
         self.track_model(model, hyperparameters)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
-        criterion = torch.nn.BCEWithLogitsLoss()
-        optimizer = AdamW(
-            self.model.parameters(), lr=hyperparameters["learning_rate"],
-            weight_decay=hyperparameters["weight_decay"])
-        lr_scheduler = get_scheduler(
-            name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps)
-        # train
-        self.model.train()
-        for epoch in tqdm.tqdm(range(hyperparameters["num_train_epochs"])):
-            for batch in self.train_dataloader:
-                batch = {k: v.to(self.device) for k, v in batch.items()}
-                labels = batch.pop("labels")
-                outputs = model(**batch)
-                loss = criterion(outputs.logits.max(dim=1)[0], labels)
-                loss.backward()
-                optimizer.step()
-                lr_scheduler.step()
-                optimizer.zero_grad()
+        model.train(document_collection=self.train_collection)
 
         val_labels = []
         val_preds = []
-        self.model.eval()
-        for batch in self.val_dataloader:
-            val_labels += batch.pop("labels").tolist()
-            batch = {k: v.to(self.device) for k, v in batch.items()}
-            with torch.no_grad():
-                output = self.model(**batch)
-            logits = output.logits
-            predictions = torch.argmax(logits, dim=-1)
-            val_preds += predictions.detach().cpu().tolist()
+        label_retriever = LabelRetriever()
+        for document in self.val_collection:
+            predicted_annotations = self.model.predict(document)
+            pred_idx = [predicted_annotation.blob_idx for predicted_annotation in predicted_annotations]
+            document_labels = label_retriever.retrieve_labels(document.blobs)
+            document_labels = self.model.preprocessor.prepare_labels(document_labels)
+            # adjust evaluation
+            found = [document_labels[pred_id] for pred_id in pred_idx]
         metrics_handler = MetricsHandler()
         metrics = metrics_handler.calculate_classification_metrics(val_labels, val_preds)
         return metrics['macro avg f1-score']
@@ -77,22 +57,14 @@ class BERTBinaryObjective(Objective):
     def test(self):
         test_labels = []
         test_preds = []
-        self.model.eval()
-        for batch in self.test_dataloader:
-            test_labels += batch.pop("labels").tolist()
-            batch = {k: v.to(self.device) for k, v in batch.items()}
-            with torch.no_grad():
-                output = self.model(**batch)
-            logits = output.logits
-            predictions = torch.argmax(logits, dim=-1)
-            test_preds += predictions.detach().cpu().tolist()
+        label_retriever = LabelRetriever()
+        for document in self.test_collection:
+            predicted_annotations = self.model.predict(document)
+            blob_idx = [predicted_annotation.blob_idx for predicted_annotation in predicted_annotations]
+            document_labels = label_retriever.retrieve_labels(document.blobs)
+            document_labels = self.model.preprocessor.prepare_labels(document_labels)
+            test_labels += document_labels
+            test_preds += [1 if idx in blob_idx else 0 for idx, _ in enumerate(document_labels)]
         metrics_handler = MetricsHandler()
         metrics = metrics_handler.calculate_classification_metrics(test_labels, test_preds)
         return metrics
-
-
-class BERTRightToObjective(BERTBinaryObjective):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.labels = 6
