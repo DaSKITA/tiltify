@@ -1,5 +1,5 @@
 from typing import Dict, List
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 import torch
 from transformers import BertTokenizer, BatchEncoding
 
@@ -75,13 +75,14 @@ class TiltDataset(Dataset):
 class BERTPreprocessor(Preprocessor):
 
     def __init__(
-            self, bert_model: str = None, binary: bool = False) -> None:
+            self, bert_model: str = None, binary: bool = False, batch_size: float = 100) -> None:
         if bert_model:
             self.bert_model = bert_model
         else:
             self.bert_model = BASE_BERT_MODEL
         self.bert_tokenizer = BertTokenizer.from_pretrained(self.bert_model)
         self.binary = binary
+        self.batch_size = batch_size
 
     def preprocess(self, document_collection: DocumentCollection):
         """This preprocessing function creates a corpus where all documents form a list of sentences and labels.
@@ -103,7 +104,8 @@ class BERTPreprocessor(Preprocessor):
             corpus_labels.append(document_labels)
         corpus_labels = sum(corpus_labels, [])
         preprocessed_corpus = self._tokenize_blobs(corpus_blobs)
-        return TiltDataset(preprocessed_corpus, corpus_labels)
+        dataset = TiltDataset(preprocessed_corpus, corpus_labels)
+        return self._create_dataloader(dataset)
 
     def preprocess_document(self, document: Document):
         """Used for inference. If a single document is provided this document has to be used for prediction.
@@ -114,7 +116,10 @@ class BERTPreprocessor(Preprocessor):
         Returns:
             _type_: _description_
         """
-        return self._tokenize_blobs([blob.text for blob in document.blobs])
+        preprocessed_document = self._tokenize_blobs([blob.text for blob in document.blobs])
+        document_labels = self.label_retriever.retrieve_labels(document.blobs)
+        document_labels = self.prepare_labels(document_labels)
+        return preprocessed_document, document_labels
 
     def prepare_labels(self, labels: List):
         """Binarize Labels if necessray.
@@ -152,10 +157,21 @@ class BERTPreprocessor(Preprocessor):
         return self.bert_tokenizer(
             blobs, padding=True, truncation=True, return_tensors="pt")
 
+    def _create_dataloader(self, dataset: TiltDataset) -> DataLoader:
+        sampler = self._create_sampler(dataset)
+        loader = DataLoader(dataset=dataset, batch_size=self.batch_size, sampler=sampler)
+        return loader
+
+    def _create_sampler(self, dataset: TiltDataset) -> WeightedRandomSampler:
+        class_weights = [
+            1/torch.sum(dataset.labels == label).float() for label in dataset.labels.unique(sorted=True)]
+        sample_weights = torch.tensor([class_weights[t.int()] for t in dataset.labels])
+        return WeightedRandomSampler(sample_weights, num_samples=sample_weights.shape[0])
+
 
 if __name__ == "__main__":
     document_collection = DocumentCollection.from_json_files()
     preprocessor = BERTPreprocessor(
-        bert_model=BASE_BERT_MODEL, binary=True)
+        bert_model=BASE_BERT_MODEL, binary=True, batch_size=10)
     preprocessed_dataaset = preprocessor.preprocess(document_collection)
     print("Done")
