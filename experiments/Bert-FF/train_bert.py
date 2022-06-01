@@ -5,7 +5,7 @@ from rapidflow.experiments.experiment import Experiment
 from tiltify.config import BASE_BERT_MODEL, Path
 from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
 from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective, BERTRightToObjective
-from tiltify.objectives.bert_objective.bert_splitter import BERTSplitter
+from tiltify.preprocessing.document_collection_splitter import DocumentCollectionSplitter
 from tiltify.data_structures.document_collection import DocumentCollection
 
 
@@ -24,7 +24,7 @@ def train_bert(binary, k, trials, batch_size, split_ratio, num_processes):
     preprocessor = BERTPreprocessor(
         bert_model=BASE_BERT_MODEL, binary=binary)
     preprocessed_dataaset = preprocessor.preprocess(document_collection)
-    bert_splitter = BERTSplitter(val=True, split_ratio=split_ratio, batch_size=batch_size)
+    bert_splitter = DocumentCollectionSplitter(val=True, split_ratio=split_ratio, batch_size=batch_size)
     train, val, test = bert_splitter.split(preprocessed_dataaset)
     experiment = Experiment(experiment_path=exp_dir, title="Binary-Classification", model_name="Bert-FF")
 
