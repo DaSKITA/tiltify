@@ -10,9 +10,10 @@ from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
 from tiltify.data_structures.document_collection import DocumentCollection
 
 
+
 class BinaryBERTModel(ExtractionModel):
 
-    def __init__(self, learning_rate, weight_decay, num_train_epochs, batch_size) -> None:
+    def __init__(self, learning_rate, weight_decay, num_train_epochs, batch_size, k_ranks=None) -> None:
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.num_train_epochs = num_train_epochs
@@ -20,7 +21,10 @@ class BinaryBERTModel(ExtractionModel):
         self.device = torch.device("cpu")# "cuda" if torch.cuda.is_available() else "cpu")
         self.preprocessor = BERTPreprocessor(bert_model=BASE_BERT_MODEL, binary=True, batch_size=batch_size)
         self.label_name = "Consumer_Right"
-        self.k_ranks = len([key for key in LABEL_REPLACE.keys() if key])
+        if k_ranks:
+            self.k_ranks = k_ranks
+        else:
+            self.k_ranks = len([key for key in LABEL_REPLACE.keys() if key])
 
     def train(self, document_collection: DocumentCollection):
         data_loader = self.preprocessor.preprocess(document_collection)
@@ -48,7 +52,7 @@ class BinaryBERTModel(ExtractionModel):
                 lr_scheduler.step()
                 i += 1
 
-    def predict(self, document: Document, for_validation=False):
+    def predict(self, document: Document):
         preprocessed_document, _ = self.preprocessor.preprocess_document(document)
         preprocessed_document = {k: v.to(self.device) for k, v in preprocessed_document.items()}
         with torch.no_grad():
@@ -67,3 +71,6 @@ class BinaryBERTModel(ExtractionModel):
 
     def save(self):
         pass
+
+    def set_k_ranks(self, k_ranks):
+        self.k_ranks = k_ranks

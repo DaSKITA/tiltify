@@ -5,6 +5,7 @@ from rapidflow.objective import Objective
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
 from tiltify.preprocessing.label_retriever import LabelRetriever
+from tiltify.utils.match_metric_calculator import MatchMetricCalculator
 
 
 class BERTBinaryObjective(Objective):
@@ -30,7 +31,7 @@ class BERTBinaryObjective(Objective):
             weight_decay=trial.suggest_float("weight_decay", 1e-7, 1e-5, log=True),
             batch_size=2
         )
-        metrics_handler = MetricsHandler()
+        metrics_handler = MatchMetricCalculator()
         # model setup
         model = BinaryBERTModel(learning_rate=hyperparameters["learning_rate"],
                                 weight_decay=hyperparameters["weight_decay"],
@@ -40,31 +41,35 @@ class BERTBinaryObjective(Objective):
         self.track_model(model, hyperparameters)
         model.train(document_collection=self.train_collection)
 
-        val_labels = []
-        val_preds = []
+        relevant_indices = []
+        retrieved_indices = []
         label_retriever = LabelRetriever()
         for document in self.val_collection:
-            predicted_annotations = self.model.predict(document)
-            pred_idx = [predicted_annotation.blob_idx for predicted_annotation in predicted_annotations]
             document_labels = label_retriever.retrieve_labels(document.blobs)
             document_labels = self.model.preprocessor.prepare_labels(document_labels)
-            # adjust evaluation
-            found = [document_labels[pred_id] for pred_id in pred_idx]
-        metrics_handler = MetricsHandler()
-        metrics = metrics_handler.calculate_classification_metrics(val_labels, val_preds)
-        return metrics['macro avg f1-score']
+            relevant_indices.append([idx for idx, document_label in enumerate(document_labels) if document_label == 1])
+            predicted_annotations = self.model.predict(document)
+            retrieved_indices.append([predicted_annotation.blob_idx for predicted_annotation in predicted_annotations])
+        accuracy = metrics_handler.get_match_accuracy(relevant_indices, retrieved_indices)
+        # metrics = metrics_handler.calculate_classification_metrics(val_labels, val_preds)
+        return accuracy
 
     def test(self):
-        test_labels = []
-        test_preds = []
+        metrics_handler = MatchMetricCalculator()
+        relevant_indices = []
+        retrieved_indices = []
+        retrieved_indices_10 = []
         label_retriever = LabelRetriever()
         for document in self.test_collection:
-            predicted_annotations = self.model.predict(document)
-            blob_idx = [predicted_annotation.blob_idx for predicted_annotation in predicted_annotations]
             document_labels = label_retriever.retrieve_labels(document.blobs)
             document_labels = self.model.preprocessor.prepare_labels(document_labels)
-            test_labels += document_labels
-            test_preds += [1 if idx in blob_idx else 0 for idx, _ in enumerate(document_labels)]
-        metrics_handler = MetricsHandler()
-        metrics = metrics_handler.calculate_classification_metrics(test_labels, test_preds)
+            relevant_indices.append([idx for idx, document_label in enumerate(document_labels) if document_label == 1])
+            predicted_annotations = self.model.predict(document)
+            self.model.set_k_ranks(10)
+            predicted_annotations_10 = self.model.predict(document)
+            retrieved_indices.append([predicted_annotation.blob_idx for predicted_annotation in predicted_annotations])
+            retrieved_indices_10.append([predicted_annotation.blob_idx for predicted_annotation in predicted_annotations_10])
+        accuracy = metrics_handler.get_match_accuracy(relevant_indices, retrieved_indices)
+        accuracy_10 = metrics_handler.get_match_accuracy(relevant_indices, retrieved_indices_10)
+        metrics = {"accuracy": accuracy, "accuracy_10": accuracy_10}
         return metrics
