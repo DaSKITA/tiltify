@@ -10,7 +10,6 @@ from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
 from tiltify.data_structures.document_collection import DocumentCollection
 
 
-
 class BinaryBERTModel(ExtractionModel):
 
     def __init__(self, learning_rate, weight_decay, num_train_epochs, batch_size, k_ranks=None) -> None:

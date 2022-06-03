@@ -1,5 +1,4 @@
 from typing import Dict
-from rapidflow.metrics_handler import MetricsHandler
 from rapidflow.objective import Objective
 
 from tiltify.data_structures.document_collection import DocumentCollection

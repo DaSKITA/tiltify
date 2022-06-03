@@ -1,8 +1,5 @@
 
 
-import re
-
-
 class MatchMetricCalculator:
 
     def __init__(self) -> None:
@@ -31,3 +28,11 @@ class MatchMetricCalculator:
             "support": support
         }
         return metrics
+
+
+if __name__ == "__main__":
+    relevant_indices = [[1, 2, 3], [2, 6, 8, 9]]
+    retrieved_indices = [[1, 8, 3], [2, 6, 8, 9]]
+    calculator = MatchMetricCalculator()
+    metrics = calculator.calculate_retrieval_metrics(relevant_indices, retrieved_indices)
+    print(metrics)
