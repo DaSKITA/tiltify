@@ -1,5 +1,8 @@
 
 
+import re
+
+
 class MatchMetricCalculator:
 
     def __init__(self) -> None:
@@ -15,3 +18,16 @@ class MatchMetricCalculator:
             document_match.append(all(match_per_doc))
         accuracy = sum(document_match)/len(document_match)
         return accuracy
+
+    def get_support(self, relevant_indices):
+        return len(relevant_indices)
+
+    def calculate_retrieval_metrics(self, relevant_indices, retrieved_indices):
+        accuracy = self.get_match_accuracy(relevant_indices, retrieved_indices)
+        support = self.get_support(relevant_indices)
+
+        metrics = {
+            "accuracy": accuracy,
+            "support": support
+        }
+        return metrics
