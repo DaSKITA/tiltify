@@ -27,9 +27,9 @@ class BERTBinaryObjective(Objective):
     def train(self, trial=None) -> Dict:
         hyperparameters = dict(
             learning_rate=trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True),
-            num_train_epochs=1,
+            num_train_epochs=5,
             weight_decay=trial.suggest_float("weight_decay", 1e-7, 1e-5, log=True),
-            batch_size=2
+            batch_size=50
         )
         metrics_handler = MatchMetricCalculator()
         # model setup
