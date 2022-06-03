@@ -37,4 +37,7 @@ class Blob:
             self.prediction_annotations.append(annotation)
 
     def get_prediction_annotations(self) -> List[str]:
-        return [annotation for annotation in self.prediction_annotations]
+        if self.annotations != []:
+            return [annotation for annotation in self.annotations]
+        else:
+            return None
