@@ -28,7 +28,7 @@ class BERTBinaryObjective(Objective):
             learning_rate=trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True),
             num_train_epochs=5,
             weight_decay=trial.suggest_float("weight_decay", 1e-7, 1e-5, log=True),
-            batch_size=35
+            batch_size=25
         )
         metrics_handler = MatchMetricCalculator()
         # model setup
