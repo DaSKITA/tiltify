@@ -17,7 +17,7 @@ class BinaryBERTModel(ExtractionModel):
         self.weight_decay = weight_decay
         self.num_train_epochs = num_train_epochs
         self.model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=1)
-        self.device = torch.device("cpu")  # "cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.preprocessor = BERTPreprocessor(bert_model=BASE_BERT_MODEL, binary=True, batch_size=batch_size)
         self.label_name = "Consumer_Right"
         if k_ranks:

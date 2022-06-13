@@ -81,7 +81,7 @@ if __name__ == "__main__":
     extractor = BinaryBERTExtractor()
     config = {
         "k": 2,
-        "trials": 10,
+        "trials": 5,
         "val": True,
         "split_ratio": 0.33,
         "language": "de"
