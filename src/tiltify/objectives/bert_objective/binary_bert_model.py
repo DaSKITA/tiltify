@@ -36,11 +36,8 @@ class BinaryBERTModel(ExtractionModel):
             name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps)
 
         self.model.train()
-        i = 0
         for _ in tqdm(range(self.num_train_epochs)):
             for batch in data_loader:
-                if i > 2:
-                    break
                 batch = {k: v.to(self.device) for k, v in batch.items()}
                 labels = batch.pop("labels")
                 optimizer.zero_grad()
@@ -49,7 +46,6 @@ class BinaryBERTModel(ExtractionModel):
                 loss.backward()
                 optimizer.step()
                 lr_scheduler.step()
-                i += 1
 
     def predict(self, document: Document):
         preprocessed_document, _ = self.preprocessor.preprocess_document(document)

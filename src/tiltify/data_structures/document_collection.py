@@ -34,7 +34,7 @@ class DocumentCollection:
         # Annotations are not parsed
         json_policies = cls.data_loader.get_json_policies(folder_name)
         json_policies = [
-            json_policy for json_policy in json_policies if json_policy["language"] == language][:5]
+            json_policy for json_policy in json_policies if json_policy["language"] == language]
         document_list = [
             cls.json_parser.parse(**json_policy["document"], annotations=json_policy["annotations"])
             for json_policy in json_policies]

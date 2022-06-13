@@ -26,7 +26,7 @@ class BERTBinaryObjective(Objective):
     def train(self, trial=None) -> Dict:
         hyperparameters = dict(
             learning_rate=trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True),
-            num_train_epochs=1,
+            num_train_epochs=5,
             weight_decay=trial.suggest_float("weight_decay", 1e-7, 1e-5, log=True),
             batch_size=2
         )
@@ -65,7 +65,7 @@ class BERTBinaryObjective(Objective):
             predicted_annotations.append(self.model.predict(document))
             self.model.set_k_ranks(10)
             predicted_annotations_10.append(self.model.predict(document))
-        accuracy = metrics_handler.get_match_accuracy(labels, predicted_annotations)
-        accuracy_10 = metrics_handler.get_match_accuracy(labels, predicted_annotations_10)
+        accuracy = metrics_handler.calculate_retrieval_metrics(labels, predicted_annotations)
+        accuracy_10 = metrics_handler.calculate_retrieval_metrics(labels, predicted_annotations_10)
         metrics = {"accuracy": accuracy, "accuracy_10": accuracy_10}
         return metrics
