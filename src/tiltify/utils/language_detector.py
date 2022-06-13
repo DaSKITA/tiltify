@@ -1,14 +1,18 @@
 import os
 import fasttext
+import urllib.request
 
 from tiltify.config import Path
 
 
-class LanguageIdentification:
+class LanguageDetector:
 
     def __init__(self):
-        pretrained_lang_model = os.path.join(Path.data_path, "pretrained_language_model/fasttext/lid.176.bin")
-        self.model = fasttext.load_model(pretrained_lang_model)
+        self.pretrained_lang_model_path = os.path.join(Path.data_path, "pretrained_language_model/fasttext/lid.176.bin")
+        urllib.request.urlretrieve(
+            "https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin",
+            self.pretrained_lang_model_path)
+        self.model = fasttext.load_model(self.pretrained_lang_model_path)
 
     def predict_lang(self, text):
         text = text.replace("\n", " ")
@@ -18,6 +22,6 @@ class LanguageIdentification:
 
 
 if __name__ == '__main__':
-    LANGUAGE = LanguageIdentification()
+    LANGUAGE = LanguageDetector()
     lang = LANGUAGE.predict_lang("Hallo\n")
     print(lang)
