@@ -35,3 +35,14 @@ class LabelRetriever:
                 annotation = [0]
             labels.append(annotation)
         return labels
+
+
+if __name__ == "__main__":
+    from tiltify.data_structures.document_collection import DocumentCollection
+    label_retriever = LabelRetriever()
+    document_collection = DocumentCollection.from_json_files(language="de")
+    labels = {}
+    for document in document_collection:
+        doc_label = label_retriever.retrieve_labels(document.blobs)
+        labels[document.title] = doc_label
+    print([sum(doc_labels[0]) for doc_labels in labels.values()])

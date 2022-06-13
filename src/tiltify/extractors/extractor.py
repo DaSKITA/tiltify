@@ -66,7 +66,7 @@ class BinaryBERTExtractor(Extractor):
         if self.extraction_model:
             predicted_annotations = self.extraction_model.predict(document)
         else:
-            Warning("Modle not loaded!")
+            Warning("Model not loaded!")
         # predicted annotations
         pass
 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     extractor = BinaryBERTExtractor()
     config = {
         "k": 3,
-        "trials": 20,
+        "trials": 15,
         "val": True,
         "split_ratio": 0.33,
         "language": "de"

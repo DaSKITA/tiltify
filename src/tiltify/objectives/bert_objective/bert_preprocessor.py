@@ -127,6 +127,7 @@ class BERTPreprocessor(Preprocessor):
     def prepare_labels(self, labels: List):
         """Binarize Labels if necessray.
         Only Labels that are above 1 are matched. As the preprocessor tries to identify relevant blobs.
+        Labels are passed as a list of Integers.
 
         Args:
             labels (List): _description_
