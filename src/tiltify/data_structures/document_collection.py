@@ -1,3 +1,4 @@
+import json
 from tiltify.parsers.policy_parser import PolicyParser
 from tiltify.data_structures.document import Document
 from tiltify.data_loader import DataLoader
@@ -21,7 +22,7 @@ class DocumentCollection:
         self.index = 0
 
     @classmethod
-    def from_json_files(cls, folder_name: str = "annotated_policies"):
+    def from_json_files(cls, folder_name: str = "annotated_policies", language: str = "de"):
         """Creates a Document Collection from Json Policy files.
 
         Args:
@@ -32,6 +33,8 @@ class DocumentCollection:
         """
         # Annotations are not parsed
         json_policies = cls.data_loader.get_json_policies(folder_name)
+        json_policies = [
+            json_policy for json_policy in json_policies if json_policy["language"] == language]
         document_list = [
             cls.json_parser.parse(**json_policy["document"], annotations=json_policy["annotations"])
             for json_policy in json_policies]

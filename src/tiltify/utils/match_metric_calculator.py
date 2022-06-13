@@ -5,7 +5,9 @@ class MatchMetricCalculator:
     def __init__(self) -> None:
         pass
 
-    def get_match_accuracy(self, relevant_indices, retrieved_indices):
+    def get_match_accuracy(self, labels, predicted_annotations):
+        relevant_indices, retrieved_indices = self._get_relevant_indices(
+            labels, predicted_annotations)
         document_match = []
         for idx, relevant_per_doc_indices in enumerate(relevant_indices):
             retrieved_per_doc_indices = retrieved_indices[idx]
@@ -19,7 +21,9 @@ class MatchMetricCalculator:
     def get_support(self, relevant_indices):
         return len(relevant_indices)
 
-    def calculate_retrieval_metrics(self, relevant_indices, retrieved_indices):
+    def calculate_retrieval_metrics(self, labels, predicted_annotations):
+        relevant_indices, retrieved_indices = self._get_relevant_indices(
+            labels, predicted_annotations)
         accuracy = self.get_match_accuracy(relevant_indices, retrieved_indices)
         support = self.get_support(relevant_indices)
 
@@ -29,10 +33,20 @@ class MatchMetricCalculator:
         }
         return metrics
 
+    def _get_relevant_indices(self, labels, predicted_annotations):
+        """_summary_
 
-if __name__ == "__main__":
-    relevant_indices = [[1, 2, 3], [2, 6, 8, 9]]
-    retrieved_indices = [[1, 8, 3], [2, 6, 8, 9]]
-    calculator = MatchMetricCalculator()
-    metrics = calculator.calculate_retrieval_metrics(relevant_indices, retrieved_indices)
-    print(metrics)
+        Args:
+            labels (_type_): _description_
+            predicted_annotations (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        relevant_indices = []
+        retrieved_indices = []
+        for idx, document_labels in enumerate(labels):
+            relevant_indices.append([idx for idx, label in enumerate(document_labels) if label == 1])
+            retrieved_indices.append([
+                predicted_annotation.blob_idx for predicted_annotation in predicted_annotations[idx]])
+        return relevant_indices, retrieved_indices

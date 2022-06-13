@@ -40,35 +40,32 @@ class BERTBinaryObjective(Objective):
         self.track_model(model, hyperparameters)
         model.train(document_collection=self.train_collection)
 
-        relevant_indices = []
-        retrieved_indices = []
+        predicted_annotations = []
+        labels = []
         label_retriever = LabelRetriever()
         for document in self.val_collection:
             document_labels = label_retriever.retrieve_labels(document.blobs)
             document_labels = self.model.preprocessor.prepare_labels(document_labels)
-            relevant_indices.append([idx for idx, document_label in enumerate(document_labels) if document_label == 1])
-            predicted_annotations = self.model.predict(document)
-            retrieved_indices.append([predicted_annotation.blob_idx for predicted_annotation in predicted_annotations])
-        accuracy = metrics_handler.get_match_accuracy(relevant_indices, retrieved_indices)
+            predicted_annotations.append(self.model.predict(document))
+            labels.append(document_labels)
+        accuracy = metrics_handler.get_match_accuracy(labels, predicted_annotations)
         # metrics = metrics_handler.calculate_classification_metrics(val_labels, val_preds)
         return accuracy
 
     def test(self):
         metrics_handler = MatchMetricCalculator()
-        relevant_indices = []
-        retrieved_indices = []
-        retrieved_indices_10 = []
+        predicted_annotations = []
+        predicted_annotations_10 = []
+        labels = []
         label_retriever = LabelRetriever()
         for document in self.test_collection:
             document_labels = label_retriever.retrieve_labels(document.blobs)
             document_labels = self.model.preprocessor.prepare_labels(document_labels)
-            relevant_indices.append([idx for idx, document_label in enumerate(document_labels) if document_label == 1])
-            predicted_annotations = self.model.predict(document)
+            labels.append(document_labels)
+            predicted_annotations.append(self.model.predict(document))
             self.model.set_k_ranks(10)
-            predicted_annotations_10 = self.model.predict(document)
-            retrieved_indices.append([predicted_annotation.blob_idx for predicted_annotation in predicted_annotations])
-            retrieved_indices_10.append([predicted_annotation.blob_idx for predicted_annotation in predicted_annotations_10])
-        accuracy = metrics_handler.get_match_accuracy(relevant_indices, retrieved_indices)
-        accuracy_10 = metrics_handler.get_match_accuracy(relevant_indices, retrieved_indices_10)
+            predicted_annotations_10.append(self.model.predict(document))
+        accuracy = metrics_handler.get_match_accuracy(labels, predicted_annotations)
+        accuracy_10 = metrics_handler.get_match_accuracy(labels, predicted_annotations_10)
         metrics = {"accuracy": accuracy, "accuracy_10": accuracy_10}
         return metrics

@@ -3,6 +3,7 @@ import requests
 import json
 
 from tiltify.config import Path
+from tiltify.utils.language_detector import LanguageIdentification
 
 
 def authorize(username, password, url):
@@ -22,10 +23,12 @@ def get_annotated_policies_json(token, url):
 @click.option('--password', required=True)
 @click.option('--url', required=True)
 def load_annotated_policies(username, password, url):
+    language_detector = LanguageIdentification()
     jwt_token = authorize(username, password, url)
     annotated_policies = get_annotated_policies_json(jwt_token, url)
     for entry in annotated_policies:
         path = Path.annotated_policy_path + '/' + entry["document"]["document_name"] + '.json'
+        entry["language"] = language_detector.predict_lang(entry["document"]["text"])
         with open(path, 'w') as file:
             json.dump(entry, file)
 

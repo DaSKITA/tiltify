@@ -173,7 +173,7 @@ class BERTPreprocessor(Preprocessor):
 
 
 if __name__ == "__main__":
-    document_collection = DocumentCollection.from_json_files()
+    document_collection = DocumentCollection.from_json_files(language="de")
     preprocessor = BERTPreprocessor(
         bert_model=BASE_BERT_MODEL, binary=True, batch_size=10)
     preprocessed_dataaset = preprocessor.preprocess(document_collection)
