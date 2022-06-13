@@ -36,7 +36,8 @@ class BinaryBERTExtractor(Extractor):
         self.extraction_model_cls = BinaryBERTModel
 
     def train(
-            self, k: int, trials: int, val: bool, split_ratio: float, num_processes: int = None):
+            self, k: int, trials: int, val: bool, split_ratio: float, num_processes: int = None,
+            language: str = "de"):
         """
         Train is performed on sentence level.
         Validate and Test is performed on Document Level
@@ -50,7 +51,7 @@ class BinaryBERTExtractor(Extractor):
             batch_size (_type_): _description_
         """
 
-        document_collection = DocumentCollection.from_json_files()
+        document_collection = DocumentCollection.from_json_files(language=language)
         bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
         train, val, test = bert_splitter.split(document_collection)
         experiment = Experiment(
@@ -83,5 +84,6 @@ if __name__ == "__main__":
         "trials": 20,
         "val": True,
         "split_ratio": 0.33,
+        "language": "de"
     }
     extractor.train(**config)
