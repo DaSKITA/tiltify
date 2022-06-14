@@ -80,8 +80,8 @@ class BinaryBERTExtractor(Extractor):
 if __name__ == "__main__":
     extractor = BinaryBERTExtractor()
     config = {
-        "k": 2,
-        "trials": 5,
+        "k": 1,
+        "trials": 1,
         "val": True,
         "split_ratio": 0.33,
         "language": "de",
