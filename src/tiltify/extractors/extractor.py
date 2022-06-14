@@ -56,7 +56,7 @@ class BinaryBERTExtractor(Extractor):
         train, val, test = bert_splitter.split(document_collection)
         experiment = Experiment(
             experiment_path=self.exp_dir, title=self.__class__.__name__,
-            model_name=self.extraction_model.__class__.__name__)
+            model_name=self.extraction_model_cls.__name__)
         experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
         experiment.run(k=k, trials=trials, num_processes=num_processes)
 
