@@ -10,8 +10,10 @@ FINETUNED_BERT_MODEL_PATH = "model/bert-finetuned"
 DEFAULT_TEST_SPLIT_RATIO = 0.33
 RANDOM_SPLIT_SEED = 0
 
-LABEL_REPLACE = {None: 0, 'rightToInformation--Description': 1, 'rightToRectificationOrDeletion--Description': 2, 'rightToDataPortability--Description': 3,
-                 'rightToWithdrawConsent--Description': 4, 'rightToComplain--Description': 5, 'rightToComplain--Description': 6}
+LABEL_REPLACE = {
+    None: 0, 'rightToInformation--Description': 1,
+    'rightToRectificationOrDeletion--Description': 2, 'rightToDataPortability--Description': 3,
+    'rightToWithdrawConsent--Description': 4, 'rightToComplain--Description': 5}
 
 
 class Path:

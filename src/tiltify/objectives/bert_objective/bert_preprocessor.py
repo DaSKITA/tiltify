@@ -122,7 +122,8 @@ class BERTPreprocessor(Preprocessor):
         preprocessed_document = self._tokenize_blobs([blob.text for blob in document.blobs])
         document_labels = self.label_retriever.retrieve_labels(document.blobs)
         document_labels = self.prepare_labels(document_labels)
-        return preprocessed_document, document_labels
+        dataset = TiltDataset(preprocessed_document, document_labels)
+        return self._create_dataloader(dataset)
 
     def prepare_labels(self, labels: List):
         """Binarize Labels if necessray.
