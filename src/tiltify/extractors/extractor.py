@@ -84,6 +84,7 @@ if __name__ == "__main__":
         "trials": 5,
         "val": True,
         "split_ratio": 0.33,
-        "language": "de"
+        "language": "de",
+        "num_processes": 1
     }
     extractor.train(**config)
