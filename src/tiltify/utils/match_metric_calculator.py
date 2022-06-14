@@ -31,9 +31,7 @@ class MatchMetricCalculator:
         metrics = {
             "accuracy": accuracy,
             "support": support,
-            "labels": {
-                label_support
-            }
+            "labels": label_support
         }
         return metrics
 
@@ -61,7 +59,13 @@ class MatchMetricCalculator:
 
 
 if __name__ == "__main__":
-    predictions = [[0, 1, 1, 2], [4, 0, 3, 3, 4]]
+    from tiltify.data_structures.document import PredictedAnnotation
+
+    predictions = [
+        [PredictedAnnotation(blob_idx=1, blob_text="", label="consumer_right")],
+        [PredictedAnnotation(blob_idx=4, blob_text="", label="consumer_right")]]
     labels = [[0, 1, 1, 3], [4, 2, 3, 3, 4]]
     calculator = MatchMetricCalculator()
-    print(calculator._get_label_support(labels, predictions))
+    print(calculator._get_label_support(labels))
+    print(calculator.get_match_accuracy(labels, predictions))
+    print(calculator.calculate_retrieval_metrics(labels, predictions))
