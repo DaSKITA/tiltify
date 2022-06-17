@@ -1,5 +1,6 @@
 from typing import List
 from collections import Counter
+import numpy as np
 
 
 class MatchMetricCalculator:
@@ -11,14 +12,25 @@ class MatchMetricCalculator:
         relevant_indices, retrieved_indices = self._get_relevant_indices(
             labels, predicted_annotations)
         document_match = []
+        document_match_counts = []
+        document_match_rate = []
         for idx, relevant_per_doc_indices in enumerate(relevant_indices):
             retrieved_per_doc_indices = retrieved_indices[idx]
             match_per_doc = [
                 True if relevant_index in retrieved_per_doc_indices else False
                 for relevant_index in relevant_per_doc_indices]
             document_match.append(all(match_per_doc))
+            document_match_counts.append(sum(match_per_doc))
+            document_match_rate.append(sum(match_per_doc)/len(match_per_doc))
         accuracy = sum(document_match)/len(document_match)
-        return accuracy
+        avg_match_per_doc = np.round(np.mean(document_match_counts), 3).astype(float)
+        avg_document_match_rate = np.round(np.mean(document_match_rate), 3).astype(float)
+        accuracy_dict = {
+            "exact_match_accuracy": accuracy,
+            "avg_match_per_doc": avg_match_per_doc,
+            "avg_match_rate_per_doc": avg_document_match_rate
+        }
+        return accuracy_dict
 
     def get_support(self, relevant_indices):
         return len(relevant_indices)
@@ -69,3 +81,6 @@ if __name__ == "__main__":
     print(calculator._get_label_support(labels))
     print(calculator.get_match_accuracy(labels, predictions))
     print(calculator.calculate_retrieval_metrics(labels, predictions))
+
+
+# Negative Sampling?
