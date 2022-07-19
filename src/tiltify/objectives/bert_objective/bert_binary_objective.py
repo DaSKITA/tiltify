@@ -50,7 +50,7 @@ class BERTBinaryObjective(Objective):
             labels.append(document_labels)
         accuracy = metrics_handler.get_match_accuracy(labels, predicted_annotations)
         # metrics = metrics_handler.calculate_classification_metrics(val_labels, val_preds)
-        return accuracy
+        return accuracy["exact_match_accuracy"]
 
     def test(self):
         metrics_handler = MatchMetricCalculator()
