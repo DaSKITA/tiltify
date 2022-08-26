@@ -4,7 +4,7 @@ from rapidflow.experiments.experiment import Experiment
 
 from tiltify.config import BASE_BERT_MODEL, Path
 from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
-from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective, BERTRightToObjective
+from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective#, BERTRightToObjective
 from tiltify.preprocessing.document_collection_splitter import DocumentCollectionSplitter
 from tiltify.data_structures.document_collection import DocumentCollection
 
@@ -29,8 +29,8 @@ def train_bert(binary, k, trials, batch_size, split_ratio, num_processes):
 
     if binary:
         experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
-    else:
-        experiment.add_objective(BERTRightToObjective, args=[train, val, test])
+    #else:
+    #    experiment.add_objective(BERTRightToObjective, args=[train, val, test])
 
     experiment.run(k=k, trials=trials, num_processes=num_processes)
 
