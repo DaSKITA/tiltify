@@ -5,8 +5,10 @@ import seaborn as sns
 
 from matplotlib.backends.backend_pdf import PdfPages
 from sentence_transformers import InputExample, losses, SentenceTransformer, util
+from sklearn.model_selection import train_test_split
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
+from tiltify.preprocessing.label_retriever import LabelRetriever
 from time import gmtime, strftime
 from torch.utils.data import DataLoader
 
@@ -36,12 +38,11 @@ queries = {(1,
 
 def load_doc_col():
     unprocessed_doc_col = DocumentCollection.from_json_files()
-    preprocessor = BERTPreprocessor(bert_model="dbmdz/bert-base-german-cased", binary=False)
+    label_retriever = LabelRetriever()
     processed_doc_col = {}
     for idx, doc in enumerate(unprocessed_doc_col):
-        # TODO: use LabelRetriever instead
-        _, labels = preprocessor.preprocess_document(doc)
-        processed_doc_col[idx] = (doc.blobs, labels)
+        labels = label_retriever.retrieve_labels(doc.blobs)
+        processed_doc_col[idx] = ([blob.text for blob in doc.blobs], labels)
     return processed_doc_col
 
 
@@ -50,10 +51,11 @@ def split_doc_col(doc_col, query_id):
     for idx, doc_tuple in doc_col.items():
         if query_id in [label for labels in doc_tuple[1] for label in labels]:
             positive_docs.append(idx)
-    # TODO: implement 1/3 split
+    train_idx, test_idx = train_test_split(positive_docs, test_size=0.33, random_state=42)
+    # TODO: implement split
+    return ([], [])
 
-
-def plotGraph(title, pos, neg):
+def plot_graph(title, pos, neg):
     fig = plt.figure()
     sns.distplot(neg, label="Negative Data")
     sns.distplot(pos, label="Positive Data")
@@ -103,8 +105,8 @@ if __name__ == "__main__":
         neg_cos_scores = util.cos_sim(query_embedding, negative_embeddings)[0]
 
         # plotting
-        plot1 = plotGraph(query_name, neg_cos_scores.numpy(), pos_cos_scores.numpy())
-        plot2 = plotGraph(query_name, pos_cos_scores.numpy(), neg_cos_scores.numpy())
+        plot1 = plot_graph(query_name, neg_cos_scores.numpy(), pos_cos_scores.numpy())
+        plot2 = plot_graph(query_name, pos_cos_scores.numpy(), neg_cos_scores.numpy())
         pp.savefig(plot1)
         pp.savefig(plot2)
 
