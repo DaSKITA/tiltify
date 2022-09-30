@@ -9,7 +9,6 @@ from operator import itemgetter
 from sentence_transformers import InputExample, losses, SentenceTransformer, util
 from sklearn.model_selection import train_test_split
 from tiltify.data_structures.document_collection import DocumentCollection
-from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
 from tiltify.preprocessing.label_retriever import LabelRetriever
 from time import gmtime, strftime
 from torch.utils.data import DataLoader
@@ -39,28 +38,41 @@ queries = {(1,
 
 
 def load_doc_col():
+    # load complete DocumentCollection and create LabelRetriever
     unprocessed_doc_col = DocumentCollection.from_json_files()
     label_retriever = LabelRetriever()
     processed_doc_col = {}
+
+    # preprocess DocumentCollection
     for idx, doc in enumerate(unprocessed_doc_col):
         labels = label_retriever.retrieve_labels(doc.blobs)
         processed_doc_col[idx] = ([blob.text for blob in doc.blobs], labels)
+
     return processed_doc_col
 
 
 def split_doc_col(doc_col, query_id):
+    # gather indices of documents containing queried label
     positive_doc_ids = []
     for idx, doc_tuple in doc_col.items():
         if query_id in [label for labels in doc_tuple[1] for label in labels]:
             positive_doc_ids.append(idx)
+
+    # split indices array
     _, test_idx = train_test_split(positive_doc_ids, test_size=0.33, random_state=42)
+
+    # create splitted lists of documents using the indices array
     train_docs = itemgetter(*[id for id in list(range(len(doc_col))) if id not in test_idx])(doc_col)
     test_docs = itemgetter(*test_idx)(doc_col)
 
     # flatten list of tuples of lists
-    train_data = ([(blob_text, doc_tuple[1][idx]) for doc_tuple in train_docs for idx, blob_text in enumerate(doc_tuple[0])])
-    test_data = ([(blob_text, doc_tuple[1][idx]) for doc_tuple in test_docs for idx, blob_text in enumerate(doc_tuple[0])])
+    train_data = ([(blob_text, doc_tuple[1][idx]) for doc_tuple in train_docs
+                   for idx, blob_text in enumerate(doc_tuple[0])])
+    test_data = ([(blob_text, doc_tuple[1][idx]) for doc_tuple in test_docs
+                  for idx, blob_text in enumerate(doc_tuple[0])])
+
     return train_data, test_data
+
 
 def plot_graph(title, pos, neg):
     fig = plt.figure()
@@ -76,12 +88,12 @@ def plot_graph(title, pos, neg):
 
 
 def evaluation(model, query, query_name, positive_data, negative_data, pp, label=None):
-    # Embed the query and data
+    # embed the query and data
     query_embedding = model.encode(query, convert_to_tensor=True)
     positive_embeddings = model.encode(positive_data, convert_to_tensor=True)
     negative_embeddings = model.encode(negative_data, convert_to_tensor=True)
 
-    # Run the query against all positive and negative examples respectively
+    # run the query against all positive and negative examples respectively
     pos_cos_scores = util.cos_sim(query_embedding, positive_embeddings)[0]
     neg_cos_scores = util.cos_sim(query_embedding, negative_embeddings)[0]
 
@@ -116,7 +128,7 @@ if __name__ == "__main__":
         positive_train_data, negative_train_data, positive_test_data, negative_test_data = [], [], [], []
         test_docs, train_docs = split_doc_col(doc_col, query_id)
 
-        # Process train data
+        # process train data
         for blob, labels in train_docs:
             if query_id in labels:
                 positive_train_data.append(blob)
@@ -125,18 +137,18 @@ if __name__ == "__main__":
         train_data = [InputExample(texts=combination)
                       for combination in itertools.product([query], positive_train_data, negative_train_data)]
 
-        # Process test_data
+        # process test_data
         for blob, labels in test_docs:
             if query_id in labels:
                 positive_test_data.append(blob)
             else:
                 negative_test_data.append(blob)
 
-        # Initiate model and measure pre-training performance
+        # initiate model and measure pre-training performance
         model = SentenceTransformer('dbmdz/bert-base-german-cased')
         evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="pre-training")
 
-        # Train the model
+        # train the model
         train_dataloader = DataLoader(train_data, shuffle=True, batch_size=16)
         train_loss = losses.TripletLoss(model, triplet_margin=5)
         model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
