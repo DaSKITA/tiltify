@@ -55,6 +55,7 @@ def split_doc_col(doc_col, query_id):
     # TODO: implement split
     return ([], [])
 
+
 def plot_graph(title, pos, neg):
     fig = plt.figure()
     sns.distplot(neg, label="Negative Data")
@@ -66,6 +67,21 @@ def plot_graph(title, pos, neg):
     plt.text(plt.xlim()[0], plt.ylim()[1] * 0.85, f"\nPositive Data\nMean: {np.mean(pos)}\nMedian: {np.median(pos)}")
     plt.text(plt.xlim()[0], plt.ylim()[1] * 0.7, f"\nNegative Data\nMean: {np.mean(neg)}\nMedian: {np.median(neg)}")
     return fig
+
+
+def form_triplets(query, data):
+    positive_data = []
+    negative_data = []
+    for blobs, labels in data:
+        for i, blob in blobs:
+            if query_id in labels[i]:
+                positive_data.append(blob.text)
+            else:
+                negative_data.append(blob.text)
+
+    triplet_data = [InputExample(texts=combination)
+                    for combination in itertools.product([query], positive_data, negative_data)]
+    return triplet_data
 
 
 if __name__ == "__main__":
