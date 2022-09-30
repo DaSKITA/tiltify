@@ -101,8 +101,8 @@ def evaluation(model, query, query_name, positive_data, negative_data, pp, label
     negative_embeddings = model.encode(negative_data, convert_to_tensor=True)
 
     # Run the query against all positive and negative examples respectively
-    pos_cos_scores = util.cos_sim(query_embedding, positive_embeddings)[0]
-    neg_cos_scores = util.cos_sim(query_embedding, negative_embeddings)[0]
+    pos_cos_scores = util.cos_sim(query_embedding, positive_embeddings)[0].cpu()
+    neg_cos_scores = util.cos_sim(query_embedding, negative_embeddings)[0].cpu()
 
     # plotting
     plot1 = plot_graph(query_name + "_" + label if label else query_name, neg_cos_scores.numpy(),
@@ -116,7 +116,7 @@ def evaluation(model, query, query_name, positive_data, negative_data, pp, label
 if __name__ == "__main__":
     # directory structure
     directory_name = f'triplet_semantic_search_results_{strftime("%Y-%m-%d_%H:%M:%S", gmtime())}'
-    curr_dir = os.getcwd()
+    curr_dir = os.path.dirname(__file__)
     exp_dir = os.path.join(curr_dir, directory_name)
     models_dir = os.path.join(exp_dir, 'models')
     os.makedirs(exp_dir)
@@ -135,8 +135,15 @@ if __name__ == "__main__":
         positive_train_data, negative_train_data, positive_test_data, negative_test_data = [], [], [], []
         test_docs, train_docs = split_doc_col(doc_col, query_id)
 
+        # for testing
+        test_docs = (test_docs[0][:5], test_docs[1][:5])
+        train_docs = (train_docs[0][:10], train_docs[1][:10])
+        test_docs[1][2] = [1]
+        train_docs[1][3] = [1]
+
         # Process train data
-        for blob, labels in train_docs:
+        for idx, blob in enumerate(train_docs[0]):
+            labels = train_docs[1][idx]
             if query_id in labels:
                 positive_train_data.append(blob)
             else:
@@ -145,7 +152,8 @@ if __name__ == "__main__":
                       for combination in itertools.product([query], positive_train_data, negative_train_data)]
 
         # Process test_data
-        for blob, labels in test_docs:
+        for idx, blob in enumerate(test_docs[0]):
+            labels = test_docs[1][idx]
             if query_id in labels:
                 positive_test_data.append(blob)
             else:
@@ -156,7 +164,7 @@ if __name__ == "__main__":
         evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="pre-training")
 
         # Train the model
-        train_dataloader = DataLoader(train_data, shuffle=True, batch_size=16)
+        train_dataloader = DataLoader(train_data, shuffle=True, batch_size=1)
         train_loss = losses.TripletLoss(model, triplet_margin=5)
         model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
         evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="post-training")
