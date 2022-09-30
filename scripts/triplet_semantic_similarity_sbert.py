@@ -7,11 +7,19 @@ import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
 from operator import itemgetter
 from sentence_transformers import InputExample, losses, SentenceTransformer, util
+from sklearn.feature_selection import SelectFromModel
 from sklearn.model_selection import train_test_split
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.preprocessing.label_retriever import LabelRetriever
 from time import gmtime, strftime
 from torch.utils.data import DataLoader
+import multiprocessing as mp
+ctx = mp.get_context('spawn')
+import json
+from pynvml import *
+from pynvml.smi import nvidia_smi
+nvmlInit()
+from time import sleep
 
 # Excerpts from DSGVO, that define the analyzed rights
 # RightToInformation | DSGVO Art. 13 (2b)
@@ -122,11 +130,38 @@ def evaluation(model, query, query_name, positive_data, negative_data, pp, label
     pp.savefig(plot2)
 
 
+def record_watt(queue, model_dir):
+    power_draws = []
+    while queue.get():
+        inst = nvidia_smi.getInstance()
+        memory = inst.DeviceQuery("memory.used")
+        power_draw = inst.DeviceQuery("power.draw")
+        stats = {"memory_usage": memory, "power_draw": power_draw}
+        power_draws.append(stats)
+        if queue.empty():
+            queue.put(True)
+        sleep(5)
+    with open(os.path.join(model_dir, "power_draws.json"), "w") as f:
+        json.dump(power_draws, f)
+
+
+def train_with_power_draw(model, train_dataloader, train_loss, model_dir):
+    queue = ctx.Queue()
+    queue.put(True)
+    p = ctx.Process(target=record_watt, args=(queue, model_dir,))
+    p.start()
+    model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
+    queue.put(False)
+    p.join()
+    sleep(2)
+    p.close()
+    return model
+
+
 if __name__ == "__main__":
-    from tqdm import tqdm
     # directory structure
     directory_name = f'triplet_semantic_search_results_{strftime("%Y-%m-%d_%H:%M:%S", gmtime())}'
-    curr_dir = os.path.dirname(__file__)
+    curr_dir = os.path.join(os.path.dirname(__file__), "triplet_training")
     exp_dir = os.path.join(curr_dir, directory_name)
     models_dir = os.path.join(exp_dir, 'models')
     os.makedirs(exp_dir)
@@ -137,6 +172,7 @@ if __name__ == "__main__":
 
     # loading and preprocessing DocumentCollection
     doc_col = load_doc_col()
+    power_draws = {}
 
     for (query_id, query_name), query in queries.items():
         print(30*"#"+f" Starting with {query_name} "+30*"#")
@@ -175,10 +211,10 @@ if __name__ == "__main__":
         # Train the model
         train_dataloader = DataLoader(train_data, shuffle=True, batch_size=100)
         train_loss = losses.TripletLoss(model, triplet_margin=5)
-        model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
+        # model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
+        model = train_with_power_draw(model, train_dataloader, train_loss, model_dir)
         evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="post-training")
 
         # save trained model
         model.save(path=model_dir, model_name=model_name)
-
     pp.close()
