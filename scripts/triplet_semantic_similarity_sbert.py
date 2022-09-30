@@ -182,11 +182,11 @@ if __name__ == "__main__":
         positive_train_data, negative_train_data, positive_test_data, negative_test_data = [], [], [], []
         test_docs, train_docs = split_doc_col(doc_col, query_id)
 
-        # for testing
-        test_docs = test_docs[:5]
-        train_docs = train_docs[:10]
-        test_docs[1][1] = [query_id]
-        train_docs[1][1] = [query_id]
+        # # for testing
+        # test_docs = test_docs[:5]
+        # train_docs = train_docs[:10]
+        # test_docs[1][1] = [query_id]
+        # train_docs[1][1] = [query_id]
 
         # Process train data
         for blob, labels in train_docs:
