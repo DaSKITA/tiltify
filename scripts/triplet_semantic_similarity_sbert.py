@@ -80,7 +80,7 @@ def plot_graph(title, pos, neg):
     sns.distplot(neg, label="Negative Data")
     sns.distplot(pos, label="Positive Data")
     plt.legend()
-    fig.suptitle(f"Semantic Search Similarity for {title}", fontsize=20)
+    fig.suptitle(f"Similarity for {title}", fontsize=14)
     plt.xlabel('Cosine Similarity', fontsize=18)
     plt.ylabel('Density', fontsize=16)
     plt.text(plt.xlim()[0], plt.ylim()[1] * 0.85, f"\nPositive Data\nMean: {np.mean(pos)}\nMedian: {np.median(pos)}")
