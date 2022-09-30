@@ -4,6 +4,7 @@ import numpy as np
 import seaborn as sns
 
 from matplotlib.backends.backend_pdf import PdfPages
+from operator import itemgetter
 from sentence_transformers import InputExample, losses, SentenceTransformer, util
 from sklearn.model_selection import train_test_split
 from tiltify.data_structures.document_collection import DocumentCollection
@@ -47,13 +48,18 @@ def load_doc_col():
 
 
 def split_doc_col(doc_col, query_id):
-    positive_docs = []
+    positive_doc_ids = []
     for idx, doc_tuple in doc_col.items():
         if query_id in [label for labels in doc_tuple[1] for label in labels]:
-            positive_docs.append(idx)
-    train_idx, test_idx = train_test_split(positive_docs, test_size=0.33, random_state=42)
-    # TODO: implement split
-    return ([], [])
+            positive_doc_ids.append(idx)
+    _, test_idx = train_test_split(positive_doc_ids, test_size=0.33, random_state=42)
+    train_docs = itemgetter(*[id for id in list(range(len(doc_col))) if id not in test_idx])(doc_col)
+    test_docs = itemgetter(*test_idx)(doc_col)
+
+    # flatten list of tuples of lists
+    train_data = ([blob_text for doc_tuple in train_docs for blob_text in doc_tuple[0]], [label for doc_tuple in train_docs for label in doc_tuple[1]])
+    test_data = ([blob_text for doc_tuple in test_docs for blob_text in doc_tuple[0]], [label for doc_tuple in test_docs for label in doc_tuple[1]])
+    return train_data, test_data
 
 def plot_graph(title, pos, neg):
     fig = plt.figure()
