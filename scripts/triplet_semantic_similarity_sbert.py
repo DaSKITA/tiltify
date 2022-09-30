@@ -94,6 +94,25 @@ def form_triplets(query, data):
     return triplet_data
 
 
+def evaluation(model, query, query_name, positive_data, negative_data, pp, label=None):
+    # Embed the query and data
+    query_embedding = model.encode(query, convert_to_tensor=True)
+    positive_embeddings = model.encode(positive_data, convert_to_tensor=True)
+    negative_embeddings = model.encode(negative_data, convert_to_tensor=True)
+
+    # Run the query against all positive and negative examples respectively
+    pos_cos_scores = util.cos_sim(query_embedding, positive_embeddings)[0]
+    neg_cos_scores = util.cos_sim(query_embedding, negative_embeddings)[0]
+
+    # plotting
+    plot1 = plot_graph(query_name + "_" + label if label else query_name, neg_cos_scores.numpy(),
+                       pos_cos_scores.numpy())
+    plot2 = plot_graph(query_name + "_" + label if label else query_name, pos_cos_scores.numpy(),
+                       neg_cos_scores.numpy())
+    pp.savefig(plot1)
+    pp.savefig(plot2)
+
+
 if __name__ == "__main__":
     # directory structure
     directory_name = f'triplet_semantic_search_results_{strftime("%Y-%m-%d_%H:%M:%S", gmtime())}'
