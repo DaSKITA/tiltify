@@ -147,8 +147,8 @@ if __name__ == "__main__":
         # for testing
         test_docs = test_docs[:5]
         train_docs = train_docs[:10]
-        test_docs[1][1] = [1]
-        train_docs[1][1] = [1]
+        test_docs[1][1] = [query_id]
+        train_docs[1][1] = [query_id]
 
         # Process train data
         for blob, labels in train_docs:
