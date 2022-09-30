@@ -123,6 +123,7 @@ def evaluation(model, query, query_name, positive_data, negative_data, pp, label
 
 
 if __name__ == "__main__":
+    from tqdm import tqdm
     # directory structure
     directory_name = f'triplet_semantic_search_results_{strftime("%Y-%m-%d_%H:%M:%S", gmtime())}'
     curr_dir = os.path.dirname(__file__)
@@ -138,6 +139,7 @@ if __name__ == "__main__":
     doc_col = load_doc_col()
 
     for (query_id, query_name), query in queries.items():
+        print(30*"#"+f" Starting with {query_name} "+30*"#")
         model_name = "triplet_semantic_search_" + query_name.lower().replace(" ", "_")
         model_dir = os.path.join(models_dir, model_name)
         os.makedirs(model_dir)
@@ -171,7 +173,7 @@ if __name__ == "__main__":
         evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="pre-training")
 
         # Train the model
-        train_dataloader = DataLoader(train_data, shuffle=True, batch_size=1)
+        train_dataloader = DataLoader(train_data, shuffle=True, batch_size=100)
         train_loss = losses.TripletLoss(model, triplet_margin=5)
         model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
         evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="post-training")
