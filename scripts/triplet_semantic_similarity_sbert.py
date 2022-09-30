@@ -47,7 +47,7 @@ def load_doc_col():
     return processed_doc_col
 
 
-def split_doc_col(doc_col, query_id):
+def split_doc_col(doc_col, query_id, with_docs=False):
     positive_doc_ids = []
     for idx, doc_tuple in doc_col.items():
         if query_id in [label for labels in doc_tuple[1] for label in labels]:
@@ -59,7 +59,10 @@ def split_doc_col(doc_col, query_id):
     # flatten list of tuples of lists
     train_data = ([blob_text for doc_tuple in train_docs for blob_text in doc_tuple[0]], [label for doc_tuple in train_docs for label in doc_tuple[1]])
     test_data = ([blob_text for doc_tuple in test_docs for blob_text in doc_tuple[0]], [label for doc_tuple in test_docs for label in doc_tuple[1]])
-    return train_data, test_data
+    if not with_docs:
+        return train_data, test_data
+    else:
+        return train_data, test_data, train_docs, test_docs
 
 
 def plot_graph(title, pos, neg):
