@@ -1,6 +1,7 @@
 import itertools
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import seaborn as sns
 
 from matplotlib.backends.backend_pdf import PdfPages
@@ -57,8 +58,8 @@ def split_doc_col(doc_col, query_id):
     test_docs = itemgetter(*test_idx)(doc_col)
 
     # flatten list of tuples of lists
-    train_data = ([blob_text for doc_tuple in train_docs for blob_text in doc_tuple[0]], [label for doc_tuple in train_docs for label in doc_tuple[1]])
-    test_data = ([blob_text for doc_tuple in test_docs for blob_text in doc_tuple[0]], [label for doc_tuple in test_docs for label in doc_tuple[1]])
+    train_data = ([(blob_text, doc_tuple[1][idx]) for doc_tuple in train_docs for idx, blob_text in enumerate(doc_tuple[0])])
+    test_data = ([(blob_text, doc_tuple[1][idx]) for doc_tuple in test_docs for idx, blob_text in enumerate(doc_tuple[0])])
     return train_data, test_data
 
 def plot_graph(title, pos, neg):
@@ -74,46 +75,74 @@ def plot_graph(title, pos, neg):
     return fig
 
 
+def evaluation(model, query, query_name, positive_data, negative_data, pp, label=None):
+    # Embed the query and data
+    query_embedding = model.encode(query, convert_to_tensor=True)
+    positive_embeddings = model.encode(positive_data, convert_to_tensor=True)
+    negative_embeddings = model.encode(negative_data, convert_to_tensor=True)
+
+    # Run the query against all positive and negative examples respectively
+    pos_cos_scores = util.cos_sim(query_embedding, positive_embeddings)[0]
+    neg_cos_scores = util.cos_sim(query_embedding, negative_embeddings)[0]
+
+    # plotting
+    plot1 = plot_graph(query_name + "_" + label if label else query_name, neg_cos_scores.numpy(),
+                       pos_cos_scores.numpy())
+    plot2 = plot_graph(query_name + "_" + label if label else query_name, pos_cos_scores.numpy(),
+                       neg_cos_scores.numpy())
+    pp.savefig(plot1)
+    pp.savefig(plot2)
+
+
 if __name__ == "__main__":
+    # directory structure
+    directory_name = f'triplet_semantic_search_results_{strftime("%Y-%m-%d_%H:%M:%S", gmtime())}'
+    curr_dir = os.getcwd()
+    exp_dir = os.path.join(curr_dir, directory_name)
+    models_dir = os.path.join(exp_dir, 'models')
+    os.makedirs(exp_dir)
+    os.makedirs(models_dir)
+
     # plotting pdf creation
-    pp = PdfPages(f'triplet_semantic_search_results_{strftime("%Y-%m-%d_%H:%M:%S", gmtime())}.pdf')
+    pp = PdfPages(exp_dir + '/evaluation.pdf')
 
     # loading and preprocessing DocumentCollection
     doc_col = load_doc_col()
 
     for (query_id, query_name), query in queries.items():
-        positive_data = []
-        negative_data = []
+        model_name = "triplet_semantic_search_" + query_name.lower().replace(" ", "_")
+        model_dir = os.path.join(models_dir, model_name)
+        os.makedirs(model_dir)
+        positive_train_data, negative_train_data, positive_test_data, negative_test_data = [], [], [], []
         test_docs, train_docs = split_doc_col(doc_col, query_id)
 
-        for blobs, labels in train_docs:
-            for i, blob in blobs:
-                if query_id in labels[i]:
-                    positive_data.append(blob.text)
-                else:
-                    negative_data.append(blob.text)
+        # Process train data
+        for blob, labels in train_docs:
+            if query_id in labels:
+                positive_train_data.append(blob)
+            else:
+                negative_train_data.append(blob)
+        train_data = [InputExample(texts=combination)
+                      for combination in itertools.product([query], positive_train_data, negative_train_data)]
 
-        train_data = [InputExample(texts=combination) for combination in itertools.product([query], positive_data, negative_data)]
+        # Process test_data
+        for blob, labels in test_docs:
+            if query_id in labels:
+                positive_test_data.append(blob)
+            else:
+                negative_test_data.append(blob)
+
+        # Initiate model and measure pre-training performance
+        model = SentenceTransformer('dbmdz/bert-base-german-cased')
+        evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="pre-training")
 
         # Train the model
-        model = SentenceTransformer('dbmdz/bert-base-german-cased')
         train_dataloader = DataLoader(train_data, shuffle=True, batch_size=16)
         train_loss = losses.TripletLoss(model, triplet_margin=5)
         model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
+        evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="post-training")
 
-        # Embed the query and data
-        query_embedding = model.encode(query, convert_to_tensor=True)
-        positive_embeddings = model.encode(positive_data, convert_to_tensor=True)
-        negative_embeddings = model.encode(negative_data, convert_to_tensor=True)
-
-        # Run the query against all positive and negative examples respectively
-        pos_cos_scores = util.cos_sim(query_embedding, positive_embeddings)[0]
-        neg_cos_scores = util.cos_sim(query_embedding, negative_embeddings)[0]
-
-        # plotting
-        plot1 = plot_graph(query_name, neg_cos_scores.numpy(), pos_cos_scores.numpy())
-        plot2 = plot_graph(query_name, pos_cos_scores.numpy(), neg_cos_scores.numpy())
-        pp.savefig(plot1)
-        pp.savefig(plot2)
+        # save trained model
+        model.save(path=model_dir, model_name=model_name)
 
     pp.close()
