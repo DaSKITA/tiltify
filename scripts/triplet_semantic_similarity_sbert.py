@@ -65,10 +65,10 @@ def split_doc_col(doc_col, query_id, with_docs=False):
     test_docs = itemgetter(*test_idx)(doc_col)
 
     # flatten list of tuples of lists
-    train_data = ([(blob_text, doc_tuple[1][idx]) for doc_tuple in train_docs
-                   for idx, blob_text in enumerate(doc_tuple[0])])
-    test_data = ([(blob_text, doc_tuple[1][idx]) for doc_tuple in test_docs
-                  for idx, blob_text in enumerate(doc_tuple[0])])
+    train_data = [[blob_text, doc_tuple[1][idx]] for doc_tuple in train_docs
+                   for idx, blob_text in enumerate(doc_tuple[0])]
+    test_data = [[blob_text, doc_tuple[1][idx]] for doc_tuple in test_docs
+                  for idx, blob_text in enumerate(doc_tuple[0])]
     if not with_docs:
         return train_data, test_data
     else:
@@ -145,14 +145,13 @@ if __name__ == "__main__":
         test_docs, train_docs = split_doc_col(doc_col, query_id)
 
         # for testing
-        test_docs = (test_docs[0][:5], test_docs[1][:5])
-        train_docs = (train_docs[0][:10], train_docs[1][:10])
-        test_docs[1][2] = [1]
-        train_docs[1][3] = [1]
+        test_docs = test_docs[:5]
+        train_docs = train_docs[:10]
+        test_docs[1][1] = [1]
+        train_docs[1][1] = [1]
 
         # Process train data
-        for idx, blob in enumerate(train_docs[0]):
-            labels = train_docs[1][idx]
+        for blob, labels in train_docs:
             if query_id in labels:
                 positive_train_data.append(blob)
             else:
@@ -161,8 +160,7 @@ if __name__ == "__main__":
                       for combination in itertools.product([query], positive_train_data, negative_train_data)]
 
         # Process test_data
-        for idx, blob in enumerate(test_docs[0]):
-            labels = test_docs[1][idx]
+        for blob, labels in test_docs:
             if query_id in labels:
                 positive_test_data.append(blob)
             else:
