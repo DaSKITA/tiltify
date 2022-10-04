@@ -20,6 +20,8 @@ from pynvml import *
 from pynvml.smi import nvidia_smi
 nvmlInit()
 from time import sleep
+from datetime import datetime
+
 
 # Excerpts from DSGVO, that define the analyzed rights
 # RightToInformation | DSGVO Art. 13 (2b)
@@ -136,7 +138,8 @@ def record_watt(queue, model_dir):
         inst = nvidia_smi.getInstance()
         memory = inst.DeviceQuery("memory.used")
         power_draw = inst.DeviceQuery("power.draw")
-        stats = {"memory_usage": memory, "power_draw": power_draw}
+        timestamp = datetime.timestamp(datetime.now())
+        stats = {"memory_usage": memory, "power_draw": power_draw, "timestamp": timestamp}
         power_draws.append(stats)
         if queue.empty():
             queue.put(True)
@@ -180,7 +183,7 @@ if __name__ == "__main__":
         model_dir = os.path.join(models_dir, model_name)
         os.makedirs(model_dir)
         positive_train_data, negative_train_data, positive_test_data, negative_test_data = [], [], [], []
-        test_docs, train_docs = split_doc_col(doc_col, query_id)
+        train_docs, test_docs = split_doc_col(doc_col, query_id)
 
         # # for testing
         # test_docs = test_docs[:5]
