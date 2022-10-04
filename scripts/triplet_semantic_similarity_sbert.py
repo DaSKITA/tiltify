@@ -13,6 +13,7 @@ from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.preprocessing.label_retriever import LabelRetriever
 from time import gmtime, strftime
 from torch.utils.data import DataLoader
+import pandas as pd
 import multiprocessing as mp
 ctx = mp.get_context('spawn')
 import json
@@ -124,12 +125,9 @@ def evaluation(model, query, query_name, positive_data, negative_data, pp, label
     neg_cos_scores = util.cos_sim(query_embedding, negative_embeddings)[0].cpu()
 
     # plotting
-    plot1 = plot_graph(query_name + "_" + label if label else query_name, neg_cos_scores.numpy(),
-                       pos_cos_scores.numpy())
-    plot2 = plot_graph(query_name + "_" + label if label else query_name, pos_cos_scores.numpy(),
-                       neg_cos_scores.numpy())
+    plot1 = plot_graph(
+        query_name + "_" + label if label else query_name, pos_cos_scores.numpy(), neg_cos_scores.numpy())
     pp.savefig(plot1)
-    pp.savefig(plot2)
 
 
 def record_watt(queue, model_dir):
@@ -212,7 +210,7 @@ if __name__ == "__main__":
         evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="pre-training")
 
         # Train the model
-        train_dataloader = DataLoader(train_data, shuffle=True, batch_size=100)
+        train_dataloader = DataLoader(train_data, shuffle=True, batch_size=10)
         train_loss = losses.TripletLoss(model, triplet_margin=5)
         # model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
         model = train_with_power_draw(model, train_dataloader, train_loss, model_dir)
