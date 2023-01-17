@@ -12,7 +12,7 @@ from tiltify.data_structures.document_collection import DocumentCollection
 
 class BinaryBERTModel(ExtractionModel):
 
-    def __init__(self, learning_rate=1e-3, weight_decay=1e-5, num_train_epochs=5, batch_size=2, k_ranks=None) -> None:
+    def __init__(self, learning_rate=1e-3, weight_decay=1e-5, num_train_epochs=5, batch_size=2, k_ranks=5) -> None:
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.num_train_epochs = num_train_epochs

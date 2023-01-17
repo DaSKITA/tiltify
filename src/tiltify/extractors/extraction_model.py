@@ -1,7 +1,9 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractclassmethod
 
 
 class ExtractionModel(ABC):
+
+    model = None
 
     @abstractmethod
     def train(self):
@@ -15,7 +17,6 @@ class ExtractionModel(ABC):
     def save(self):
         pass
 
-    @abstractmethod
-    @classmethod
+    @abstractclassmethod
     def load(self):
         pass
