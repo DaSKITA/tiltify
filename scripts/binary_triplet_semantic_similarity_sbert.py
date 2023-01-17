@@ -22,31 +22,20 @@ from pynvml.smi import nvidia_smi
 nvmlInit()
 from time import sleep
 from datetime import datetime
-import logging
 
-
-# Excerpts from DSGVO, that define the analyzed rights
+# Compiled Excerpt from DSGVO, that is used to analyze "Right To"'s in a binary matter
 # RightToInformation | DSGVO Art. 13 (2b)
 # RightToRectificationOrDeletion | DSGVO Art. 16 + 17
 # RightToDataPortability | DSGVO Art. 20
 # RightToWithdrawConsent | DSGVO Art. 13 (2c)
 # RightToComplain | DSGVO Art. 13 (2d)
-# These law texts are used as our queries
-queries = {(1,
-            "Right To Information"): "Das Bestehen eines Rechts auf Auskunft seitens des Verantwortlichen über die "
-                                     "betreffenden personenbezogenen Daten.",
-           (2,
-            "Right To Rectification Or Deletion"): "Die betroffene Person hat das Recht, von dem Verantwortlichen "
-                                                   "unverzüglich die Berichtigung sie betreffender unrichtiger "
-                                                   "personenbezogener Daten zu verlangen. Die betroffene Person hat "
-                                                   "das Recht, von dem Verantwortlichen zu verlangen, dass sie "
-                                                   "betreffende personenbezogene Daten unverzüglich gelöscht werden.",
-           (3,
-            "Right To Data Portability"): "Die betroffene Person hat das Recht, die sie betreffenden personenbezogenen "
-                                          "Daten, die sie einem Verantwortlichen bereitgestellt hat, in einem "
-                                          "strukturierten, gängigen und maschinenlesbaren Format zu erhalten.",
-           (4, "Right To Withdraw Consent"): "Das Bestehen eines Rechts, die Einwilligung jederzeit zu widerrufen.",
-           (5, "Right To Complain"): "Das Bestehen eines Beschwerderechts bei einer Aufsichtsbehörde."}
+query = "Die betroffene Person hat das Recht auf Auskunft seitens des Verantwortlichen über die etreffenden " \
+        "personenbezogenen Daten. Die betroffene Person hat das Recht auf die Berichtigung sie betreffender " \
+        "unrichtiger personenbezogener Daten und auf die unverzügliche Löschung sie betreffender personenbezogener " \
+        "Daten durch den Verantwortlichen. Die betroffene Person hat das Recht, die sie betreffenden personenbezogenen " \
+        "Daten in einem strukturierten, gängigen und maschinenlesbaren Format zu erhalten. Die betroffene Person hat " \
+        "das Recht, die Einwilligung jederzeit zu widerrufen.Die betroffene Person hat das Recht auf Beschwerde bei " \
+        "einer Aufsichtsbehörde."
 
 
 def load_doc_col():
@@ -63,10 +52,10 @@ def load_doc_col():
     return processed_doc_col
 
 
-def split_doc_col(doc_col, query_id, with_docs=False):
+def split_doc_col_binary(doc_col, with_docs=False):
     positive_doc_ids = []
     for idx, doc_tuple in doc_col.items():
-        if query_id in [label for labels in doc_tuple[1] for label in labels]:
+        if {1, 2, 3, 4, 5} & set([label for labels in doc_tuple[1] for label in labels]):
             positive_doc_ids.append(idx)
 
     # split indices array
@@ -105,7 +94,7 @@ def form_triplets(query, data):
     negative_data = []
     for blobs, labels in data:
         for i, blob in blobs:
-            if query_id in labels[i]:
+            if 0 not in labels[i]:
                 positive_data.append(blob.text)
             else:
                 negative_data.append(blob.text)
@@ -131,18 +120,20 @@ def evaluation(model, query, query_name, positive_data, negative_data, pp, label
     pp.savefig(plot1)
 
 
-def record_watt(queue):
+def record_watt(queue, model_dir):
+    power_draws = []
     while queue.get():
         inst = nvidia_smi.getInstance()
         memory = inst.DeviceQuery("memory.used")
         power_draw = inst.DeviceQuery("power.draw")
         timestamp = datetime.timestamp(datetime.now())
         stats = {"memory_usage": memory, "power_draw": power_draw, "timestamp": timestamp}
-        stats = json.dumps(stats)
-        logging.debug(stats)
+        power_draws.append(stats)
         if queue.empty():
             queue.put(True)
         sleep(5)
+    with open(os.path.join(model_dir, "power_draws.json"), "w") as f:
+        json.dump(power_draws, f)
 
 
 def train_with_power_draw(model, train_dataloader, train_loss, model_dir):
@@ -160,17 +151,12 @@ def train_with_power_draw(model, train_dataloader, train_loss, model_dir):
 
 if __name__ == "__main__":
     # directory structure
-    directory_name = f'triplet_semantic_search_results_{strftime("%Y-%m-%d_%H:%M:%S", gmtime())}'
+    directory_name = f'binary_triplet_semantic_search_results_{strftime("%Y-%m-%d_%H:%M:%S", gmtime())}'
     curr_dir = os.path.join(os.path.dirname(__file__), "triplet_training")
     exp_dir = os.path.join(curr_dir, directory_name)
-    logging_file = os.path.join(exp_dir, "run.log")
-    print(f"Writing Log to: {logging_file}")
     models_dir = os.path.join(exp_dir, 'models')
     os.makedirs(exp_dir)
     os.makedirs(models_dir)
-    logging.basicConfig(
-        filename=logging_file, encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(message)s',
-        datefmt='%m/%d/%Y %I:%M:%S %p')
 
     # plotting pdf creation
     pp = PdfPages(exp_dir + '/evaluation.pdf')
@@ -178,60 +164,47 @@ if __name__ == "__main__":
     # loading and preprocessing DocumentCollection
     doc_col = load_doc_col()
     power_draws = {}
-    queue = ctx.Queue()
-    queue.put(True)
-    p = ctx.Process(target=record_watt, args=(queue,))
-    p.start()
 
-    for (query_id, query_name), query in queries.items():
-        print(30*"#"+f" Starting with {query_name} "+30*"#")
-        logging.debug(30*"#"+f" Starting with {query_name} "+30*"#")
-        model_name = "triplet_semantic_search_" + query_name.lower().replace(" ", "_")
-        model_dir = os.path.join(models_dir, model_name)
-        os.makedirs(model_dir)
-        positive_train_data, negative_train_data, positive_test_data, negative_test_data = [], [], [], []
-        train_docs, test_docs = split_doc_col(doc_col, query_id)
+    print(30*"#"+f" Starting with binary training "+30*"#")
+    model_name = "binary_triplet_semantic_search_".lower().replace(" ", "_")
+    model_dir = os.path.join(models_dir, model_name)
+    os.makedirs(model_dir)
+    positive_train_data, negative_train_data, positive_test_data, negative_test_data = [], [], [], []
+    train_docs, test_docs = split_doc_col_binary(doc_col)
 
-        # for testing
-        test_docs = test_docs[:5]
-        train_docs = train_docs[:10]
-        test_docs[1][1] = [query_id]
-        train_docs[1][1] = [query_id]
+    # # for testing
+    # test_docs = test_docs[:5]
+    # train_docs = train_docs[:10]Q
+    # test_docs[1][1] = [query_id]
+    # train_docs[1][1] = [query_id]
 
-        # Process train data
-        for blob, labels in train_docs:
-            if query_id in labels:
-                positive_train_data.append(blob)
-            else:
-                negative_train_data.append(blob)
-        train_data = [InputExample(texts=combination)
-                      for combination in itertools.product([query], positive_train_data, negative_train_data)]
+    # Process train data
+    for blob, labels in train_docs:
+        if {1, 2, 3, 4, 5} & set(labels):
+            positive_train_data.append(blob)
+        else:
+            negative_train_data.append(blob)
+    train_data = [InputExample(texts=combination)
+                  for combination in itertools.product([query], positive_train_data, negative_train_data)]
 
-        # Process test_data
-        for blob, labels in test_docs:
-            if query_id in labels:
-                positive_test_data.append(blob)
-            else:
-                negative_test_data.append(blob)
+    # Process test_data
+    for blob, labels in test_docs:
+        if {1, 2, 3, 4, 5} & set(labels):
+            positive_test_data.append(blob)
+        else:
+            negative_test_data.append(blob)
 
-        # initiate model and measure pre-training performance
-        model = SentenceTransformer('dbmdz/bert-base-german-cased')
-        evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="pre-training")
+    # initiate model and measure pre-training performance
+    model = SentenceTransformer('dbmdz/bert-base-german-cased')
+    evaluation(model, query, "Binary 'Right To's Classification", positive_test_data, negative_test_data, pp, label="pre-training")
 
-        # Train the model
-        train_dataloader = DataLoader(train_data, shuffle=True, batch_size=10)
-        train_loss = losses.TripletLoss(model, triplet_margin=5)
-        logging.debug("Start Training")
-        # model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
-        logging.debug("End Training")
-        # model = train_with_power_draw(model, train_dataloader, train_loss, model_dir)
-        evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="post-training")
+    # Train the model
+    train_dataloader = DataLoader(train_data, shuffle=True, batch_size=10)
+    train_loss = losses.TripletLoss(model, triplet_margin=5)
+    # model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
+    model = train_with_power_draw(model, train_dataloader, train_loss, model_dir)
+    evaluation(model, query, "Binary 'Right To's Classification", positive_test_data, negative_test_data, pp, label="post-training")
 
-        # save trained model
-        model.save(path=model_dir, model_name=model_name)
-        break
+    # save trained model
+    model.save(path=model_dir, model_name=model_name)
     pp.close()
-    queue.put(False)
-    p.join()
-    sleep(2)
-    p.close()
