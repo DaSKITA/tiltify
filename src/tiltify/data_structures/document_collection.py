@@ -30,8 +30,11 @@ class DocumentCollection:
         Returns:
             _type_: _description_
         """
+        # Annotations are not parsed
         json_policies = cls.data_loader.get_json_policies(folder_name)
-        document_list = [cls.json_parser.parse(**json_policy["document"], annotations=json_policy["annotations"]) for json_policy in json_policies]
+        document_list = [
+            cls.json_parser.parse(**json_policy["document"], annotations=json_policy["annotations"])
+            for json_policy in json_policies]
         return cls(document_list)
 
     @classmethod
@@ -47,7 +50,13 @@ class DocumentCollection:
         return document
 
     def __getitem__(self, key) -> Document:
-        return self.documents[key]
+        if isinstance(key, list):
+            selected_collection = []
+            for idx in key:
+                selected_collection.append(self.documents[idx])
+            return selected_collection
+        else:
+            return self.documents[key]
 
     def __iter__(self):
         """Necessary to identify it as an Iterable.
@@ -56,3 +65,6 @@ class DocumentCollection:
             _type_: _description_
         """
         return self
+
+    def __len__(self):
+        return len(self.documents)

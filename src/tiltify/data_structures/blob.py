@@ -27,4 +27,7 @@ class Blob:
             self.annotations.append(annotation)
 
     def get_annotations(self) -> List[str]:
-        return [annotation for annotation in self.annotations]
+        if self.annotations != []:
+            return [annotation for annotation in self.annotations]
+        else:
+            return None

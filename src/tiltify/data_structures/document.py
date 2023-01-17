@@ -1,6 +1,14 @@
+from dataclasses import dataclass
 from typing import List, Union
 
 from tiltify.data_structures.blob import Blob
+
+
+@dataclass
+class PredictedAnnotation:
+    blob_idx: int
+    blob_text: str
+    label: str
 
 
 class Document:
@@ -19,9 +27,21 @@ class Document:
             self.blobs = blobs
         else:
             self.blobs = []
+        self.predicted_annotations = []
 
     def add_blob(self, blob: Union[Blob, List[Blob]]):
         if isinstance(blob, list):
             self.blobs += blob
         else:
             self.blobs.append(blob)
+
+    def add_predicted_annotations(self, predicted_annotation: List[PredictedAnnotation]):
+        self.predicted_annotations += predicted_annotation
+
+    def get_predicted_annotation_by_annotation_label(self, annotation_label):
+        predicted_annotation = [predicted_annotation for predicted_annotation in self.predicted_annotations
+                                if predicted_annotation.label == annotation_label]
+        if predicted_annotation != []:
+            return predicted_annotation
+        else:
+            return None
