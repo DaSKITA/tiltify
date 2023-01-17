@@ -21,6 +21,7 @@ from pynvml.smi import nvidia_smi
 nvmlInit()
 from time import sleep
 from datetime import datetime
+import logging
 
 
 # Excerpts from DSGVO, that define the analyzed rights
@@ -132,20 +133,18 @@ def evaluation(model, query, query_name, positive_data, negative_data, pp, label
     pp.savefig(plot2)
 
 
-def record_watt(queue, model_dir):
-    power_draws = []
+def record_watt(queue):
     while queue.get():
         inst = nvidia_smi.getInstance()
         memory = inst.DeviceQuery("memory.used")
         power_draw = inst.DeviceQuery("power.draw")
         timestamp = datetime.timestamp(datetime.now())
         stats = {"memory_usage": memory, "power_draw": power_draw, "timestamp": timestamp}
-        power_draws.append(stats)
+        stats = json.dumps(stats)
+        logging.debug(stats)
         if queue.empty():
             queue.put(True)
         sleep(5)
-    with open(os.path.join(model_dir, "power_draws.json"), "w") as f:
-        json.dump(power_draws, f)
 
 
 def train_with_power_draw(model, train_dataloader, train_loss, model_dir):
@@ -166,9 +165,14 @@ if __name__ == "__main__":
     directory_name = f'triplet_semantic_search_results_{strftime("%Y-%m-%d_%H:%M:%S", gmtime())}'
     curr_dir = os.path.join(os.path.dirname(__file__), "triplet_training")
     exp_dir = os.path.join(curr_dir, directory_name)
+    logging_file = os.path.join(exp_dir, "run.log")
+    print(f"Writing Log to: {logging_file}")
     models_dir = os.path.join(exp_dir, 'models')
     os.makedirs(exp_dir)
     os.makedirs(models_dir)
+    logging.basicConfig(
+        filename=logging_file, encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(message)s',
+        datefmt='%m/%d/%Y %I:%M:%S %p')
 
     # plotting pdf creation
     pp = PdfPages(exp_dir + '/evaluation.pdf')
@@ -176,20 +180,25 @@ if __name__ == "__main__":
     # loading and preprocessing DocumentCollection
     doc_col = load_doc_col()
     power_draws = {}
+    queue = ctx.Queue()
+    queue.put(True)
+    p = ctx.Process(target=record_watt, args=(queue,))
+    p.start()
 
     for (query_id, query_name), query in queries.items():
         print(30*"#"+f" Starting with {query_name} "+30*"#")
+        logging.debug(30*"#"+f" Starting with {query_name} "+30*"#")
         model_name = "triplet_semantic_search_" + query_name.lower().replace(" ", "_")
         model_dir = os.path.join(models_dir, model_name)
         os.makedirs(model_dir)
         positive_train_data, negative_train_data, positive_test_data, negative_test_data = [], [], [], []
         train_docs, test_docs = split_doc_col(doc_col, query_id)
 
-        # # for testing
-        # test_docs = test_docs[:5]
-        # train_docs = train_docs[:10]
-        # test_docs[1][1] = [query_id]
-        # train_docs[1][1] = [query_id]
+        # for testing
+        test_docs = test_docs[:5]
+        train_docs = train_docs[:10]
+        test_docs[1][1] = [query_id]
+        train_docs[1][1] = [query_id]
 
         # Process train data
         for blob, labels in train_docs:
@@ -214,10 +223,17 @@ if __name__ == "__main__":
         # Train the model
         train_dataloader = DataLoader(train_data, shuffle=True, batch_size=100)
         train_loss = losses.TripletLoss(model, triplet_margin=5)
+        logging.debug("Start Training")
         # model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=2, warmup_steps=100)
-        model = train_with_power_draw(model, train_dataloader, train_loss, model_dir)
+        logging.debug("End Training")
+        # model = train_with_power_draw(model, train_dataloader, train_loss, model_dir)
         evaluation(model, query, query_name, positive_test_data, negative_test_data, pp, label="post-training")
 
         # save trained model
         model.save(path=model_dir, model_name=model_name)
+        break
     pp.close()
+    queue.put(False)
+    p.join()
+    sleep(2)
+    p.close()

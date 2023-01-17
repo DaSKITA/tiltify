@@ -70,6 +70,9 @@ class BinaryBERTExtractor(Extractor):
         # predicted annotations
         pass
 
+    def train_online(self, documents: DocumentCollection):
+        pass
+
     def load_best_model(self):
         pass
 

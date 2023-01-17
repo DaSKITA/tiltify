@@ -131,3 +131,4 @@ dmypy.json
 
 exp__*
 finetune_trainer
+scripts/triplet_training/real_runs/triplet_semantic_search_results_2022-09-30_19:18:01/models
