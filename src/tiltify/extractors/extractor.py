@@ -35,7 +35,7 @@ class ExtractorInterface(ABC):
         pass
 
 
-class ExtractionModelManager:
+class ExtractionModelRegistry:
     model_registry = {
             "BinaryBert": (
                 BinaryBERTModel,
@@ -64,24 +64,10 @@ class Extractor(ExtractorInterface):
 
     def __init__(self, extractor_type) -> None:
 
-        self.extraction_model_manager = ExtractionModelManager()
-        self.extraction_model_cls, self.model_path = self.extraction_model_manager.get(extractor_type)
-        # TODO: adjust objective?
+        self.extraction_model_registry = ExtractionModelRegistry()
+        self.extraction_model_cls, self.model_path = self.extraction_model_registry.get(extractor_type)
 
     def train(self):
-        """
-        Train is performed on sentence level.
-        Validate and Test is performed on Document Level
-
-        Args:
-            k (_type_): _description_
-            trials (_type_): _description_
-            num_processes (_type_): _description_
-            val (_type_): _description_
-            split_ratio (_type_): _description_
-            batch_size (_type_): _description_
-        """
-
         document_collection = DocumentCollection.from_json_files()
         # bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
         # train, val, test = bert_splitter.split(document_collection)
@@ -96,9 +82,6 @@ class Extractor(ExtractorInterface):
         predicted_annotations = self.extraction_model.predict(document)
         return predicted_annotations
 
-    def train_online(self, documents: DocumentCollection):
-        pass
-
     def load(self):
         self.extraction_model = self.extraction_model_cls.load(self.model_path)
 
@@ -106,9 +89,14 @@ class Extractor(ExtractorInterface):
         pathlib.Path(self.model_path).mkdir(parents=True, exist_ok=True)
         self.extraction_model.save(self.model_path)
 
+    def train_online(self, document_collection: DocumentCollection):
+        self.extraction_model.train(document_collection=document_collection)
+        self.save()
+
 
 if __name__ == "__main__":
     extractor = Extractor("Test")
     extractor.train()
     extractor.save()
     extractor.load()
+    extractor.predict()

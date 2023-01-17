@@ -55,7 +55,7 @@ class BinaryBERTModel(ExtractionModel):
         logits, indices = self.form_k_ranks(logits)
         indices = indices.detach().cpu().tolist()
         predicted_annotations = [
-            PredictedAnnotation(blob_idx=idx, blob_text=document.blobs[idx], label=self.label_name)
+            PredictedAnnotation(blob_idx=idx, blob_text=document.blobs[idx].text, label=self.label_name)
             for idx in indices]
         return predicted_annotations
 

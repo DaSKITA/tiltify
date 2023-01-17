@@ -21,7 +21,7 @@ class TestModel(ExtractionModel):
         self.model = True
 
     def predict(self, document: Document):
-        indexes = list(range(document.blobs))
+        indexes = list(range(len(document.blobs)))
         indices = list()
         if self.model:
             for i in range(5):
@@ -29,7 +29,7 @@ class TestModel(ExtractionModel):
         else:
             raise AssertionError("No Model loaded!")
         predicted_annotations = [
-            PredictedAnnotation(blob_idx=idx, blob_text=document.blobs[idx], label=self.label_name)
+            PredictedAnnotation(blob_idx=idx, blob_text=document.blobs[idx].text, label=self.label_name)
             for idx in indices]
         return predicted_annotations
 
