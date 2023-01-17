@@ -13,6 +13,7 @@ RANDOM_SPLIT_SEED = 0
 LABEL_REPLACE = {None: 0, 'rightToInformation--Description': 1, 'rightToRectificationOrDeletion--Description': 2, 'rightToDataPortability--Description': 3,
                  'rightToWithdrawConsent--Description': 4, 'rightToComplain--Description': 5, 'rightToComplain--Right to Complain - Supervisor Authority': 6}
 
+
 class Path:
 
     root_path = os.path.abspath(Path(os.path.dirname(__file__)).parent.parent)

@@ -10,15 +10,14 @@ from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
 from tiltify.data_structures.document_collection import DocumentCollection
 
 
-
 class BinaryBERTModel(ExtractionModel):
 
-    def __init__(self, learning_rate, weight_decay, num_train_epochs, batch_size, k_ranks=None) -> None:
+    def __init__(self, learning_rate= 1e-3, weight_decay=1e-5, num_train_epochs=5, batch_size=2, k_ranks=None) -> None:
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.num_train_epochs = num_train_epochs
         self.model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=1)
-        self.device = torch.device("cpu")# "cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")  # "cuda" if torch.cuda.is_available() else "cpu")
         self.preprocessor = BERTPreprocessor(bert_model=BASE_BERT_MODEL, binary=True, batch_size=batch_size)
         self.label_name = "Consumer_Right"
         if k_ranks:
@@ -36,12 +35,8 @@ class BinaryBERTModel(ExtractionModel):
         lr_scheduler = get_scheduler(
             name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps)
 
-        self.model.train()
-        i = 0
         for _ in tqdm(range(self.num_train_epochs)):
             for batch in data_loader:
-                if i > 2:
-                    break
                 batch = {k: v.to(self.device) for k, v in batch.items()}
                 labels = batch.pop("labels")
                 optimizer.zero_grad()
@@ -50,7 +45,6 @@ class BinaryBERTModel(ExtractionModel):
                 loss.backward()
                 optimizer.step()
                 lr_scheduler.step()
-                i += 1
 
     def predict(self, document: Document):
         preprocessed_document, _ = self.preprocessor.preprocess_document(document)

@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import os
-from numpy import extract
 from rapidflow.experiments.experiment import Experiment
 
 from tiltify.data_structures.document import Document
@@ -10,6 +9,7 @@ from tiltify.preprocessing.document_collection_splitter import DocumentCollectio
 
 from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective
 from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
+import torch
 
 
 class Extractor(ABC):
@@ -29,12 +29,18 @@ class Extractor(ABC):
     def load(self):
         pass
 
+    @abstractmethod
+    def train_online(self, document: DocumentCollection):
+        pass
+
 
 class BinaryBERTExtractor(Extractor):
+    extraction_model_cls = BinaryBERTModel
 
     def __init__(self) -> None:
-        self.exp_dir = os.path.join(Path.experiment_path)
-        self.extraction_model_cls = BinaryBERTModel
+        self.extraction_model = None
+        self.model_path = os.path.join(Path.root_path, f"src/tiltify/model_files/{self.__class__.__name__}")
+        # TODO: adjust objective?
 
     def train(
             self, k: int, trials: int, val: bool, split_ratio: float, num_processes: int = None):
@@ -52,23 +58,19 @@ class BinaryBERTExtractor(Extractor):
         """
 
         document_collection = DocumentCollection.from_json_files()
-        bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
-        train, val, test = bert_splitter.split(document_collection)
-        experiment = Experiment(
-            experiment_path=self.exp_dir, title=self.__class__.__name__,
-            model_name=self.extraction_model.__class__.__name__)
-        experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
-        experiment.run(k=k, trials=trials, num_processes=num_processes)
-
-        self.extraction_model = self.load_best_model()
+        # bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
+        # train, val, test = bert_splitter.split(document_collection)
+        self.extraction_model = self.extraction_model_cls(
+            learning_rate=1e-3, weight_decay=1e-5, num_train_epochs=5, batch_size=3, k_ranks=5)
+        self.extraction_model.train(document_collection=document_collection)
+        # experiment = Experiment(
+        #     experiment_path=self.model_path, folder_name=self.__class__.__name__)
+        # experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
+        # experiment.run(k=k, trials=trials, num_processes=num_processes)
 
     def predict(self, document: Document):
-        if self.extraction_model:
-            predicted_annotations = self.extraction_model.predict(document)
-        else:
-            Warning("Modle not loaded!")
-        # predicted annotations
-        pass
+        predicted_annotations = self.extraction_model.predict(document)
+        return predicted_annotations
 
     def train_online(self, documents: DocumentCollection):
         pass
@@ -77,15 +79,21 @@ class BinaryBERTExtractor(Extractor):
         pass
 
     def load(self):
-        pass
+        self.extraction_model = self.extraction_model_cls()
+        self.extraction_model.model.from_pretrained(self.model_path)
+
+    def save(self):
+        self.extraction_model.model.save_pretrained(self.model_path)
 
 
 if __name__ == "__main__":
     extractor = BinaryBERTExtractor()
     config = {
-        "k": 3,
-        "trials": 25,
+        "k": 1,
+        "trials": 1,
         "val": True,
         "split_ratio": 0.33,
     }
     extractor.train(**config)
+    extractor.save()
+    extractor.load()

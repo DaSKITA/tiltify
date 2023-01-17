@@ -1,6 +1,7 @@
 from typing import Dict
 from rapidflow.metrics_handler import MetricsHandler
 from rapidflow.objective import Objective
+from tqdm import tqdm
 
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
@@ -29,7 +30,7 @@ class BERTBinaryObjective(Objective):
             learning_rate=trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True),
             num_train_epochs=5,
             weight_decay=trial.suggest_float("weight_decay", 1e-7, 1e-5, log=True),
-            batch_size=50
+            batch_size=2
         )
         metrics_handler = MatchMetricCalculator()
         # model setup
@@ -44,7 +45,7 @@ class BERTBinaryObjective(Objective):
         relevant_indices = []
         retrieved_indices = []
         label_retriever = LabelRetriever()
-        for document in self.val_collection:
+        for document in tqdm(self.val_collection):
             document_labels = label_retriever.retrieve_labels(document.blobs)
             document_labels = self.model.preprocessor.prepare_labels(document_labels)
             relevant_indices.append([idx for idx, document_label in enumerate(document_labels) if document_label == 1])
