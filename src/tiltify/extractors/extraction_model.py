@@ -14,3 +14,8 @@ class ExtractionModel(ABC):
     @abstractmethod
     def save(self):
         pass
+
+    @abstractmethod
+    @classmethod
+    def load(self):
+        pass

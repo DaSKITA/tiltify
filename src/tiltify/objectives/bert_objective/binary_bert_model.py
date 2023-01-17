@@ -12,7 +12,7 @@ from tiltify.data_structures.document_collection import DocumentCollection
 
 class BinaryBERTModel(ExtractionModel):
 
-    def __init__(self, learning_rate= 1e-3, weight_decay=1e-5, num_train_epochs=5, batch_size=2, k_ranks=None) -> None:
+    def __init__(self, learning_rate=1e-3, weight_decay=1e-5, num_train_epochs=5, batch_size=2, k_ranks=None) -> None:
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.num_train_epochs = num_train_epochs
@@ -63,8 +63,19 @@ class BinaryBERTModel(ExtractionModel):
         ranked_logits, indices = torch.sort(logits[1], descending=True, dim=0)
         return ranked_logits[:self.k_ranks], indices[:self.k_ranks]
 
-    def save(self):
-        pass
+    @classmethod
+    def load(cls, load_path):
+        model = BertForSequenceClassification.from_pretrained(load_path, num_labels=1)
+        model.eval()
+        init_obj = cls()
+        init_obj.model = model
+        return init_obj
+
+    def save(self, save_path):
+        self.model.save_pretrained(save_path)
 
     def set_k_ranks(self, k_ranks):
         self.k_ranks = k_ranks
+
+    def to_device(self, device: str):
+        self.model.to(torch.device(device))

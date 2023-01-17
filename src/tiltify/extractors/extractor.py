@@ -9,7 +9,6 @@ from tiltify.preprocessing.document_collection_splitter import DocumentCollectio
 
 from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective
 from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
-import torch
 
 
 class Extractor(ABC):
@@ -75,15 +74,11 @@ class BinaryBERTExtractor(Extractor):
     def train_online(self, documents: DocumentCollection):
         pass
 
-    def load_best_model(self):
-        pass
-
     def load(self):
-        self.extraction_model = self.extraction_model_cls()
-        self.extraction_model.model.from_pretrained(self.model_path)
+        self.extraction_model = self.extraction_model_cls.load(self.model_path)
 
     def save(self):
-        self.extraction_model.model.save_pretrained(self.model_path)
+        self.extraction_model.save(self.model_path)
 
 
 if __name__ == "__main__":
