@@ -1,4 +1,6 @@
 import os
+
+from datetime import timedelta
 from pathlib import Path
 
 # default global variables
@@ -22,3 +24,16 @@ class Path:
     annotated_policy_path = os.path.join(data_path, "annotated_policies")
     default_dataset_path = os.path.join(root_path, "data/de_sentence_data.csv")
     experiment_path = os.path.join(root_path, "experiments")
+
+
+class FlaskConfig(object):
+
+    # Secrets
+    BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+    DEPLOYMENT = os.environ.get("DEPLOYMENT", False)
+
+    JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_HEADER_TYPE = ""
+
+    SECRET_KEY = os.environ["FLASK_SECRET_KEY"]
