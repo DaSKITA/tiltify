@@ -6,7 +6,7 @@ from tiltify.config import FlaskConfig
 from tiltify.extractors.extractor import Extractor
 
 # Initialize Flask App
-extractor = Extractor("Test", "Test_Label")  # TODO: change to "BinaryBert"
+extractor = Extractor(extractor_type="Test", extractor_label="test_label")  # TODO: change to "BinaryBert" and real label
 app = Flask(__name__)
 app.config.from_object(FlaskConfig)
 
