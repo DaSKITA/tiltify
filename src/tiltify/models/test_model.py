@@ -28,10 +28,7 @@ class TestModel(ExtractionModel):
                 indices.append(random.choice(indexes))
         else:
             raise AssertionError("No Model loaded!")
-        predicted_annotations = [
-            PredictedAnnotation(blob_idx=idx, blob_text=document.blobs[idx].text, label=self.label_name)
-            for idx in indices]
-        return predicted_annotations
+        return indices
 
     @classmethod
     def load(cls, load_path):

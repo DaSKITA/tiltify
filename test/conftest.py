@@ -18,3 +18,10 @@ def document_object():
                                                                 annotation['annotation_end'])
                                                      for annotation in blob["annotations"]])
                                                for blob in data['document']['blobs']])
+
+
+@pytest.fixture
+def policy():
+    with open(os.path.join(Path.root_path, 'data/test_data/policies/carrefour_document_annotations.json'), 'r') as file:
+        data = json.load(file)
+    return data['document']['document_name'], data['document']['text'], data['annotations']

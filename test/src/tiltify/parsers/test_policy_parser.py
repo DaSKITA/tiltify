@@ -13,12 +13,6 @@ from tiltify.config import Path
 
 
 
-@pytest.fixture
-def policy():
-    with open(os.path.join(Path.root_path, 'data/test_data/policies/carrefour_document_annotations.json'), 'r') as file:
-        data = json.load(file)
-    return data['document']['document_name'], data['document']['text'], data['annotations']
-
 
 def test_parser(document_object, policy):
     parser = PolicyParser()

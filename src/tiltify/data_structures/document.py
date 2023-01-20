@@ -2,13 +2,8 @@ from dataclasses import dataclass
 from typing import List, Union
 
 from tiltify.data_structures.blob import Blob
+from tiltify.data_structures.annotation import PredictedAnnotation
 
-
-@dataclass
-class PredictedAnnotation:
-    blob_idx: int
-    blob_text: str
-    label: str
 
 
 class Document:
