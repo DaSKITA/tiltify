@@ -96,7 +96,7 @@ class Extractor(ExtractorInterface):
             self.extraction_model.train(document_collection=document_collection)
             self.save()
         else:
-            print(Warning("No Model laoded, online training not possible."))
+            print(Warning("No Model loaded, online training not possible."))
 
 
 if __name__ == "__main__":

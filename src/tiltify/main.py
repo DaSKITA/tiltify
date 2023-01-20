@@ -3,6 +3,7 @@ from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_restx import Api, fields, Namespace, Resource
 
 from tiltify.config import EXTRACTOR_MODEL, FlaskConfig
+from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.extractors.extractor import Extractor
 
 # Initialize Flask App
@@ -100,8 +101,8 @@ class Train(Resource):
         :return: list of tasks.
         """
         try:
-            # TODO: get document collection from payload
-            document_collection = None
+            json_document_list = request.json.get('document')
+            document_collection = DocumentCollection.from_json_dict(json_document_list)
             extractor.train_online(document_collection)
         except Exception as e:
             return f"Error: {e}", 500
