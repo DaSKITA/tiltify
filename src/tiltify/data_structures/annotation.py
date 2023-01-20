@@ -50,3 +50,11 @@ class PredictedAnnotation(Annotation):
 
     def __init__(self, text: str, label: str, start: int, end: int) -> None:
         super().__init__(text, label, start, end)
+
+    def to_dict(self):
+        return {
+            "text": self.text,
+            "label": self.label,
+            "start": self.start,
+            "end": self.end
+        }
