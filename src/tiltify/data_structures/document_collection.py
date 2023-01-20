@@ -37,6 +37,7 @@ class DocumentCollection:
             for json_policy in json_policies]
         return cls(document_list)
 
+    @classmethod
     def from_json_dict(cls, json_policies: List[Dict]):
         """Creates a Document Collection from a single Json Policy object.
 

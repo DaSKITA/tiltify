@@ -5,9 +5,14 @@ from flask_restx import Api, fields, Namespace, Resource
 from tiltify.config import EXTRACTOR_MODEL, FlaskConfig
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.extractors.extractor import Extractor
+from tiltify.parsers.policy_parser import PolicyParser
+from tiltify.annotation_shaper import AnnotationShaper
 
 # Initialize Flask App
-extractor = Extractor(extractor_type=EXTRACTOR_MODEL, extractor_label="test_label")  # TODO: change to "BinaryBert" and real label
+extractor = Extractor(extractor_type=EXTRACTOR_MODEL, extractor_label="Controller - Company Name")  # TODO: change to "BinaryBert" and real label
+extractor.load()
+policy_parser = PolicyParser()
+annotation_shaper = AnnotationShaper(extractor=extractor)
 app = Flask(__name__)
 app.config.from_object(FlaskConfig)
 
@@ -43,7 +48,7 @@ document = api.model('Document', {
 annotation = api.model('Annotation', {
     'annotation_label': fields.String(required=True, description='Label to which this annotation belongs'),
     'annotation_text': fields.String(required=True, description='Text of annotation'),
-    'annotation_start': fields.Integer(required=True, description='Starting position of annotation in the document text'),
+    'annotation_start': fields.Integer(required=True, description='Starting position oftext annotation in the document text'),
     'annotation_end': fields.Integer(required=True, description='Ending position of annotation in the document text')
 })
 
@@ -70,7 +75,7 @@ predict_output = api.model('PredictOutput', {
 })
 
 train_input = api.model('TrainInput', {
-    'document': fields.List(fields.Nested(document), required=True)
+    'documents': fields.List(fields.Nested(document), required=True)
 })
 
 
@@ -93,6 +98,8 @@ class Authentication(Resource):
 @api.route('/train')
 class Train(Resource):
 
+    # Exchange with a CronJob and poll database directly
+
     @api.expect(train_input)
     @api.doc(security='apikey')
     @jwt_required()
@@ -101,8 +108,9 @@ class Train(Resource):
         :return: list of tasks.
         """
         try:
-            json_document_list = request.json.get('document')
+            json_document_list = request.json.get('documents')
             document_collection = DocumentCollection.from_json_dict(json_document_list)
+            # TODO: extractor management
             extractor.train_online(document_collection)
         except Exception as e:
             return f"Error: {e}", 500
@@ -120,12 +128,19 @@ class Predict(Resource):
         """
         :return: list of tasks.
         """
-        try:
-            # TODO: get task and labels from payload and process
-            task = None
-            predictions = extractor.predict(task)
-        except Exception as e:
-            return f"Error: {e}", 500
+        #try:
+        predict_input = request.json.get("document")
+        # TODO: extraction management with labels
+        labels = request.json.get("labels")
+        document = policy_parser.parse(
+            **predict_input["document"], annotations=predict_input["annotations"])
+        predictions = extractor.predict(document)
+        predictions = annotation_shaper.form_predict_annotations(
+            predictions, document, predict_input["document"]["text"])
+        predictions = {"predictions": [prediction.to_dict() for prediction in predictions]}
+
+        # except Exception as e:
+        #     return f"Error: {e}", 500
         return predictions, 200
 
 

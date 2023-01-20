@@ -13,12 +13,15 @@ class AnnotationShaper:
         predicted_annotations = list()
         for idx in indices:
             extracted_text = document.blobs[idx].text
-            span = re.search(extracted_text, bare_document).span()
+            try:
+                start = bare_document.find(extracted_text)
+            except AttributeError:
+                print(extracted_text)
             predicted_annotation = PredictedAnnotation(
                 text=extracted_text,
                 label=self.label,
-                start=span[0],
-                end=span[1]-1
+                start=start,
+                end=start+len(extracted_text)
             )
             predicted_annotations.append(predicted_annotation)
         return predicted_annotations

@@ -53,7 +53,7 @@ class PredictedAnnotation(Annotation):
 
     def to_dict(self):
         return {
-            "text": self.text,
+            "text": self.annotated_text,
             "label": self.label,
             "start": self.start,
             "end": self.end
