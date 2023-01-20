@@ -15,6 +15,7 @@ RANDOM_SPLIT_SEED = 0
 LABEL_REPLACE = {None: 0, 'rightToInformation--Description': 1, 'rightToRectificationOrDeletion--Description': 2, 'rightToDataPortability--Description': 3,
                  'rightToWithdrawConsent--Description': 4, 'rightToComplain--Description': 5, 'rightToComplain--Right to Complain - Supervisor Authority': 6}
 
+EXTRACTOR_MODEL = "Test"
 
 class Path:
 

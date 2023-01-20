@@ -2,11 +2,11 @@ from flask import Blueprint, Flask, request
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_restx import Api, fields, Namespace, Resource
 
-from tiltify.config import FlaskConfig
+from tiltify.config import EXTRACTOR_MODEL, FlaskConfig
 from tiltify.extractors.extractor import Extractor
 
 # Initialize Flask App
-extractor = Extractor(extractor_type="Test", extractor_label="test_label")  # TODO: change to "BinaryBert" and real label
+extractor = Extractor(extractor_type=EXTRACTOR_MODEL, extractor_label="test_label")  # TODO: change to "BinaryBert" and real label
 app = Flask(__name__)
 app.config.from_object(FlaskConfig)
 
