@@ -11,6 +11,7 @@ from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryOb
 from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
 from tiltify.extractors.extraction_model import ExtractionModel
 from tiltify.models.test_model import TestModel
+from tiltify.annotation_shaper import AnnotationShaper
 
 
 class ExtractorInterface(ABC):
@@ -62,10 +63,11 @@ class ExtractionModelRegistry:
 
 class Extractor(ExtractorInterface):
 
-    def __init__(self, extractor_type) -> None:
+    def __init__(self, extractor_type, extractor_label) -> None:
 
         self.extraction_model_registry = ExtractionModelRegistry()
         self.extraction_model_cls, self.model_path = self.extraction_model_registry.get(extractor_type)
+        self.extractor_label = extractor_label
 
     def train(self):
         document_collection = DocumentCollection.from_json_files()
@@ -79,8 +81,8 @@ class Extractor(ExtractorInterface):
         # experiment.run(k=k, trials=trials, num_processes=num_processes)
 
     def predict(self, document: Document):
-        predicted_annotations = self.extraction_model.predict(document)
-        return predicted_annotations
+        predictions = self.extraction_model.predict(document)
+        return predictions
 
     def load(self):
         self.extraction_model = self.extraction_model_cls.load(self.model_path)

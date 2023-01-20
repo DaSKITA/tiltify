@@ -54,10 +54,7 @@ class BinaryBERTModel(ExtractionModel):
         logits = output.logits
         logits, indices = self.form_k_ranks(logits)
         indices = indices.detach().cpu().tolist()
-        predicted_annotations = [
-            PredictedAnnotation(blob_idx=idx, blob_text=document.blobs[idx].text, label=self.label_name)
-            for idx in indices]
-        return predicted_annotations
+        return indices
 
     def form_k_ranks(self, logits):
         ranked_logits, indices = torch.sort(logits[1], descending=True, dim=0)

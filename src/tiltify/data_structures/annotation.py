@@ -2,7 +2,7 @@ from abc import ABC
 
 
 class Annotation(ABC):
-    def __init__(self, text: str, label: str, start: int, end: int) -> None:
+    def __init__(self, text: str = None, label: str = None, start: int = None, end: int = None) -> None:
         """
         This class holds Tilt-annotations. The character span gives the position in the text. The text holds
         the concrete content of the annotation. The label gives the respective position in the tilt document.
@@ -37,6 +37,15 @@ class TokenAnnotation(Annotation):
 
     Args:
         Annotation ([type]): [description]
+    """
+
+    def __init__(self, text: str, label: str, start: int, end: int) -> None:
+        super().__init__(text, label, start, end)
+
+
+class PredictedAnnotation(Annotation):
+
+    """Annotation used for model predictions.
     """
 
     def __init__(self, text: str, label: str, start: int, end: int) -> None:
