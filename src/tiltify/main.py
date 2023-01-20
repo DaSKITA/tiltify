@@ -6,7 +6,7 @@ from tiltify.config import FlaskConfig
 from tiltify.extractors.extractor import Extractor
 
 # Initialize Flask App
-extractor = Extractor("Test")  # TODO: change to "BinaryBert"
+extractor = Extractor("Test", "Test_Label")  # TODO: change to "BinaryBert"
 app = Flask(__name__)
 app.config.from_object(FlaskConfig)
 
@@ -130,5 +130,5 @@ class Predict(Resource):
 
 if __name__ == "__main__":
     app.run(
-        host="0.0.0.0", port="5000", use_debugger=False, use_reloader=False,
+        host="0.0.0.0", port="5001", use_debugger=False, use_reloader=False,
         passthrough_errors=True)
