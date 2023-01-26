@@ -68,20 +68,25 @@ class Extractor(ExtractorInterface):
         self.extraction_model_registry = ExtractionModelRegistry()
         self.extraction_model_cls, self.model_path = self.extraction_model_registry.get(extractor_type)
         self.extractor_label = extractor_label
+        self.annotation_shaper = AnnotationShaper(label=extractor_label)
 
     def train(self):
         document_collection = DocumentCollection.from_json_files()
         # bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
         # train, val, test = bert_splitter.split(document_collection)
-        self.extraction_model = self.extraction_model_cls()
+        self.extraction_model = self.extraction_model_cls(label=self.extractor_label)
         self.extraction_model.train(document_collection=document_collection)
         # experiment = Experiment(
         #     experiment_path=self.model_path, folder_name=self.__class__.__name__)
         # experiment.add_objective(BERTBinaryObjective, args=[train, val, test])
         # experiment.run(k=k, trials=trials, num_processes=num_processes)
 
-    def predict(self, document: Document):
-        predictions = self.extraction_model.predict(document)
+    def predict(self, labels: str, document: Document, bare_document: str):
+        if self.extractor_label in labels:
+            predictions = self.extraction_model.predict(document)
+        else:
+            predictions = []
+        predictions = self.annotation_shaper.form_predict_annotations(predictions, document, bare_document)
         return predictions
 
     def load(self):

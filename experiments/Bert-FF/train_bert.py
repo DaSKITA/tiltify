@@ -17,11 +17,12 @@ examples in general, instead of classifying them distinctly.', is_flag=True)
 @click.option("--num_processes", default=None, type=int, help="Number of processes for  running the experiment.")
 @click.option("--batch_size", default=32, type=int, help="Batch Size")
 @click.option("--split_ratio", default=0.4, type=float, help="Split ratio between [test, val] and train.")
-def train_bert(binary, k, trials, batch_size, split_ratio, num_processes):
+@click.option("--labels", default=None, type=list, help="The Label the Model should be trained on. Defaults to all supported by Tiltify App.")
+def train_bert(binary, k, trials, batch_size, split_ratio, num_processes, labels):
     exp_dir = os.path.dirname(os.path.abspath(__file__))
     document_collection = DocumentCollection.from_json_files()
     preprocessor = BERTPreprocessor(
-        bert_model=BASE_BERT_MODEL, binary=binary)
+        bert_model=BASE_BERT_MODEL, binary=binary, labels=labels)
     preprocessed_dataaset = preprocessor.preprocess(document_collection)
     bert_splitter = DocumentCollectionSplitter(val=True, split_ratio=split_ratio, batch_size=batch_size)
     train, val, test = bert_splitter.split(preprocessed_dataaset)

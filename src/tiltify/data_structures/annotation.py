@@ -48,7 +48,7 @@ class PredictedAnnotation(Annotation):
     """Annotation used for model predictions.
     """
 
-    def __init__(self, text: str, label: str, start: int, end: int) -> None:
+    def __init__(self, text: str = None, label: str = None, start: int = None, end: int = None) -> None:
         super().__init__(text, label, start, end)
 
     def to_dict(self):

@@ -1,5 +1,5 @@
 import os
-
+from enum import Enum
 from datetime import timedelta
 from pathlib import Path
 
@@ -12,10 +12,16 @@ FINETUNED_BERT_MODEL_PATH = "model/bert-finetuned"
 DEFAULT_TEST_SPLIT_RATIO = 0.33
 RANDOM_SPLIT_SEED = 0
 
-LABEL_REPLACE = {None: 0, 'rightToInformation--Description': 1, 'rightToRectificationOrDeletion--Description': 2, 'rightToDataPortability--Description': 3,
-                 'rightToWithdrawConsent--Description': 4, 'rightToComplain--Description': 5, 'rightToComplain--Right to Complain - Supervisor Authority': 6}
-
 EXTRACTOR_MODEL = "Test"
+TILT_LABELS = [
+    'rightToInformation--Description',
+    'rightToRectificationOrDeletion--Description',
+    'rightToDataPortability--Description',
+    'rightToWithdrawConsent--Description',
+    'rightToComplain--Description',
+    'rightToComplain--Right to Complain - Supervisor Authority'
+]
+
 
 class Path:
 
@@ -29,12 +35,15 @@ class Path:
 
 class FlaskConfig(object):
 
-    # Secrets
-    BASE_PATH = os.path.abspath(os.path.dirname(__file__))
-    DEPLOYMENT = os.environ.get("DEPLOYMENT", False)
+    try:
+        # Secrets
+        BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+        DEPLOYMENT = os.environ.get("DEPLOYMENT", False)
 
-    JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
-    JWT_HEADER_TYPE = ""
+        JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
+        JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+        JWT_HEADER_TYPE = ""
 
-    SECRET_KEY = os.environ["FLASK_SECRET_KEY"]
+        SECRET_KEY = os.environ["FLASK_SECRET_KEY"]
+    except KeyError:
+        print("Environment Variables not found. Entering Test Mode!")

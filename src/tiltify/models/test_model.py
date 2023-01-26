@@ -9,9 +9,9 @@ from tiltify.data_structures.document_collection import DocumentCollection
 
 class TestModel(ExtractionModel):
 
-    def __init__(self, num_train_epochs=2) -> None:
+    def __init__(self, num_train_epochs=2, label=None) -> None:
         self.num_train_epochs = num_train_epochs
-        self.label_name = "Test_Right"
+        self.label = label
         self.model = False
 
     def train(self, document_collection: DocumentCollection):
