@@ -13,6 +13,7 @@ DEFAULT_TEST_SPLIT_RATIO = 0.33
 RANDOM_SPLIT_SEED = 0
 
 EXTRACTOR_MODEL = "Test"
+EXTRACTOR_LABEL = 'rightToRectificationOrDeletion--Description'
 TILT_LABELS = [
     'rightToInformation--Description',
     'rightToRectificationOrDeletion--Description',

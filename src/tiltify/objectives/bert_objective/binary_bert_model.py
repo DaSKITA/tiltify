@@ -19,7 +19,6 @@ class BinaryBERTModel(ExtractionModel):
         self.model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=1)
         self.device = torch.device("cpu")  # "cuda" if torch.cuda.is_available() else "cpu")
         self.preprocessor = BERTPreprocessor(bert_model=BASE_BERT_MODEL, binary=True, batch_size=batch_size, label=label)
-        self.label = label
         if k_ranks:
             self.k_ranks = k_ranks
         else:
@@ -61,10 +60,10 @@ class BinaryBERTModel(ExtractionModel):
         return ranked_logits[:self.k_ranks], indices[:self.k_ranks]
 
     @classmethod
-    def load(cls, load_path, labels):
+    def load(cls, load_path, label):
         model = BertForSequenceClassification.from_pretrained(load_path, num_labels=1)
         model.eval()
-        init_obj = cls(labels=labels)
+        init_obj = cls(label=label)
         init_obj.model = model
         return init_obj
 

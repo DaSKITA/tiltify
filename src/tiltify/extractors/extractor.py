@@ -40,11 +40,11 @@ class ExtractionModelRegistry:
     model_registry = {
             "BinaryBert": (
                 BinaryBERTModel,
-                os.path.join(Path.root_path, f"src/tiltify/model_files/{BinaryBERTModel.__class__.__name__}")
+                os.path.join(Path.root_path, f"src/tiltify/model_files/{BinaryBERTModel.__name__}")
             ),
             "Test": (
                 TestModel,
-                os.path.join(Path.root_path, f"src/tiltify/model_files/{TestModel.__class__.__name__}")
+                os.path.join(Path.root_path, f"src/tiltify/model_files/{TestModel.__name__}")
             )
     }
 
@@ -64,11 +64,11 @@ class ExtractionModelRegistry:
 class Extractor(ExtractorInterface):
 
     def __init__(self, extractor_type, extractor_label) -> None:
-
         self.extraction_model_registry = ExtractionModelRegistry()
-        self.extraction_model_cls, self.model_path = self.extraction_model_registry.get(extractor_type)
         self.extractor_label = extractor_label
-        self.annotation_shaper = AnnotationShaper(label=extractor_label)
+        self.extraction_model_cls, self.model_path = self.extraction_model_registry.get(extractor_type)
+        self.model_path = os.path.join(self.model_path, f"{self.extractor_label}")
+        self.annotation_shaper = AnnotationShaper(label=self.extractor_label)
 
     def train(self):
         document_collection = DocumentCollection.from_json_files()
@@ -90,10 +90,10 @@ class Extractor(ExtractorInterface):
         return predictions
 
     def load(self):
-        self.extraction_model = self.extraction_model_cls.load(self.model_path)
+        self.extraction_model = self.extraction_model_cls.load(self.model_path, self.extractor_label)
 
     def save(self):
-        pathlib.Path(self.model_path).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(self.model_path).mkdir(mode=0o755, parents=True, exist_ok=True)
         self.extraction_model.save(self.model_path)
 
     def train_online(self, document_collection: DocumentCollection):
@@ -105,8 +105,8 @@ class Extractor(ExtractorInterface):
 
 
 if __name__ == "__main__":
-    extractor = Extractor("Test")
+    from tiltify.config import EXTRACTOR_MODEL, EXTRACTOR_LABEL
+    extractor = Extractor(EXTRACTOR_MODEL, EXTRACTOR_LABEL)
     extractor.train()
     extractor.save()
     extractor.load()
-    extractor.predict()

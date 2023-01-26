@@ -31,9 +31,9 @@ class TestModel(ExtractionModel):
         return indices
 
     @classmethod
-    def load(cls, load_path):
+    def load(cls, load_path, label):
         load_model = os.path.join(load_path, "test_model.txt")
-        init_obj = cls()
+        init_obj = cls(label=label)
         with open(load_model, "r") as f:
             lines = f.readlines()
         print(lines)
