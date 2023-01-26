@@ -1,14 +1,19 @@
 from typing import List, Union
 from tiltify.data_structures.blob import Blob
-from tiltify.config import TILT_LABELS
+from tiltify.config import TILT_LABELS, SUPPORTED_LABELS
 from tiltify.data_structures.annotation import Annotation
 
 
 class LabelRetriever:
 
     def __init__(self, supported_labels: Union[List, None] = None) -> None:
-        self.tilt_labels = TILT_LABELS
+        # TODO: training labers are different from prediction labels. Extractors are initialized with predict
+        # labels. The mapping from train to predict happens here.
+        self.train_label_mapper = {
+            sup_label: train_label for sup_label, train_label in zip(SUPPORTED_LABELS, TILT_LABELS)}
+
         if supported_labels:
+            supported_labels = [self.train_label_mapping[sup_label] for sup_label in supported_labels]
             self.tilt_labels_mapping = {tilt_label: idx for idx, tilt_label in enumerate(supported_labels)}
         else:
             self.tilt_labels_mapping = {tilt_label: idx for idx, tilt_label in enumerate(TILT_LABELS)}

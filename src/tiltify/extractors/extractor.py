@@ -82,7 +82,7 @@ class Extractor(ExtractorInterface):
         # experiment.run(k=k, trials=trials, num_processes=num_processes)
 
     def predict(self, labels: str, document: Document, bare_document: str):
-        if self.extractor_label in labels:
+        if self.extractor_label.split("--")[-1] in labels:
             predictions = self.extraction_model.predict(document)
         else:
             predictions = []

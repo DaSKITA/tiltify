@@ -13,7 +13,8 @@ DEFAULT_TEST_SPLIT_RATIO = 0.33
 RANDOM_SPLIT_SEED = 0
 
 EXTRACTOR_MODEL = "Test"
-EXTRACTOR_LABEL = 'rightToRectificationOrDeletion--Description'
+EXTRACTOR_LABEL = 'Right to Deletion'
+# Used for training
 TILT_LABELS = [
     'rightToInformation--Description',
     'rightToRectificationOrDeletion--Description',
@@ -21,6 +22,15 @@ TILT_LABELS = [
     'rightToWithdrawConsent--Description',
     'rightToComplain--Description',
     'rightToComplain--Right to Complain - Supervisor Authority'
+]
+
+# used for prediction
+SUPPORTED_LABELS = [
+    'Right to Information'
+    'Right to Deletion'
+    'Right to Data Portability'
+    'Right to Withdraw Consent'
+    'Right to Complain'
 ]
 
 
