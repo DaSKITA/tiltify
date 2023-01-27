@@ -12,7 +12,7 @@ FINETUNED_BERT_MODEL_PATH = "model/bert-finetuned"
 DEFAULT_TEST_SPLIT_RATIO = 0.33
 RANDOM_SPLIT_SEED = 0
 
-EXTRACTOR_MODEL = "Test"
+EXTRACTOR_MODEL = "BinaryBert"
 EXTRACTOR_LABEL = 'Right to Deletion'
 # Used for training
 TILT_LABELS = [

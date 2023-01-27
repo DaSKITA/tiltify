@@ -70,8 +70,9 @@ class Extractor(ExtractorInterface):
         self.model_path = os.path.join(self.model_path, f"{self.extractor_label}")
         self.annotation_shaper = AnnotationShaper(label=self.extractor_label)
 
-    def train(self):
-        document_collection = DocumentCollection.from_json_files()
+    def train(self, data_path: None):
+        document_collection = DocumentCollection.from_json_files(data_path) \
+            if data_path else DocumentCollection.from_json_files()
         # bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
         # train, val, test = bert_splitter.split(document_collection)
         self.extraction_model = self.extraction_model_cls(label=self.extractor_label)
@@ -107,6 +108,6 @@ class Extractor(ExtractorInterface):
 if __name__ == "__main__":
     from tiltify.config import EXTRACTOR_MODEL, EXTRACTOR_LABEL
     extractor = Extractor(EXTRACTOR_MODEL, EXTRACTOR_LABEL)
-    extractor.train()
+    extractor.train("annotated_policies/de")
     extractor.save()
     extractor.load()
