@@ -9,9 +9,8 @@ from tiltify.preprocessing.document_collection_splitter import DocumentCollectio
 
 from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective
 from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
-from tiltify.extractors.extraction_model import ExtractionModel
 from tiltify.models.test_model import TestModel
-from tiltify.annotation_shaper import AnnotationShaper
+from tiltify.data_structures.annotation import PredictedAnnotation
 
 
 class ExtractorInterface(ABC):
@@ -68,7 +67,6 @@ class Extractor(ExtractorInterface):
         self.extractor_label = extractor_label
         self.extraction_model_cls, self.model_path = self.extraction_model_registry.get(extractor_type)
         self.model_path = os.path.join(self.model_path, f"{self.extractor_label}")
-        self.annotation_shaper = AnnotationShaper(label=self.extractor_label)
 
     def train(self):
         document_collection = DocumentCollection.from_json_files()
@@ -84,9 +82,11 @@ class Extractor(ExtractorInterface):
     def predict(self, labels: str, document: Document, bare_document: str):
         if self.extractor_label.split("--")[-1] in labels:
             predictions = self.extraction_model.predict(document)
+            predictions = [
+                PredictedAnnotation.from_model_prediction(
+                    idx, document, bare_document, self.extractor_label) for idx in predictions]
         else:
-            predictions = []
-        predictions = self.annotation_shaper.form_predict_annotations(predictions, document, bare_document)
+            predictions = [PredictedAnnotation()]
         return predictions
 
     def load(self):
@@ -102,6 +102,33 @@ class Extractor(ExtractorInterface):
             self.save()
         else:
             print(Warning("No Model loaded, online training not possible."))
+
+
+class ExtractorManager:
+
+    def __init__(self, extractor_config: dict,) -> None:
+        """
+
+        Args:
+            extractor_config (dict): _description_
+            mode (str, optional): _description_. Defaults to "group".
+        """
+
+    def _init_extractors(self, extractor_config: dict) -> None:
+        for labels, model_type in extractor_config.items():
+            pass
+
+    def predict(self):
+        pass
+
+    def load(self):
+        pass
+
+    def train(self):
+        pass
+
+    def train_online(self):
+        pass
 
 
 if __name__ == "__main__":

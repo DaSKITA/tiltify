@@ -6,15 +6,14 @@ from tiltify.data_structures.annotation import Annotation
 
 class LabelRetriever:
 
-    def __init__(self, supported_labels: Union[List, None] = None) -> None:
+    def __init__(self, supported_label: Union[str, None] = None) -> None:
         # TODO: training labers are different from prediction labels. Extractors are initialized with predict
         # labels. The mapping from train to predict happens here.
-        self.train_label_mapper = {
+        self.train_label_mapping = {
             sup_label: train_label for sup_label, train_label in zip(SUPPORTED_LABELS, TILT_LABELS)}
-
-        if supported_labels:
-            supported_labels = [self.train_label_mapping[sup_label] for sup_label in supported_labels]
-            self.tilt_labels_mapping = {tilt_label: idx for idx, tilt_label in enumerate(supported_labels)}
+        if supported_label:
+            supported_label = self.train_label_mapping[supported_label]
+            self.tilt_labels_mapping = {supported_label: 1}
         else:
             self.tilt_labels_mapping = {tilt_label: idx for idx, tilt_label in enumerate(TILT_LABELS)}
 

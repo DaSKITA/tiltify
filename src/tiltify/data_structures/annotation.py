@@ -58,3 +58,15 @@ class PredictedAnnotation(Annotation):
             "start": self.start,
             "end": self.end
         }
+
+    @classmethod
+    def from_model_prediction(cls, index: int, document, bare_document: str, label: str):
+        extracted_text = document.blobs[index].text
+        start = bare_document.find(extracted_text)
+        return cls(
+            text=extracted_text,
+            # TODO: this only works if one label is supplied. For multiple labels this will fail
+            label=label,
+            start=start,
+            end=start+len(extracted_text)
+        )

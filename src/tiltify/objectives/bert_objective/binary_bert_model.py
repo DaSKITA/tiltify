@@ -44,6 +44,7 @@ class BinaryBERTModel(ExtractionModel):
                 loss.backward()
                 optimizer.step()
                 lr_scheduler.step()
+                break
 
     def predict(self, document: Document):
         preprocessed_document, _ = self.preprocessor.preprocess_document(document)
@@ -53,15 +54,16 @@ class BinaryBERTModel(ExtractionModel):
         logits = output.logits
         logits, indices = self.form_k_ranks(logits)
         indices = indices.detach().cpu().tolist()
+        indices = sum(indices, [])
         return indices
 
     def form_k_ranks(self, logits):
-        ranked_logits, indices = torch.sort(logits[1], descending=True, dim=0)
+        ranked_logits, indices = torch.sort(logits, descending=True, dim=0)
         return ranked_logits[:self.k_ranks], indices[:self.k_ranks]
 
     @classmethod
     def load(cls, load_path, label):
-        model = BertForSequenceClassification.from_pretrained(load_path, num_labels=1)
+        model = BertForSequenceClassification.from_pretrained(load_path, num_labels=1, local_files_only=True)
         model.eval()
         init_obj = cls(label=label)
         init_obj.model = model

@@ -1,5 +1,4 @@
 import os
-from enum import Enum
 from datetime import timedelta
 from pathlib import Path
 
@@ -12,8 +11,17 @@ FINETUNED_BERT_MODEL_PATH = "model/bert-finetuned"
 DEFAULT_TEST_SPLIT_RATIO = 0.33
 RANDOM_SPLIT_SEED = 0
 
-EXTRACTOR_MODEL = "Test"
+EXTRACTOR_MODEL = "BinaryBert"  # "Test"
 EXTRACTOR_LABEL = 'Right to Deletion'
+
+# this should be possible with the exraction manager
+EXTRACTOR_CONFIG = {
+    "Right to Deletion": "BinaryBert",
+    "Right to Information": "BinaryBert",
+    ["Right to Withdraw Consent", "Right to Complain"]: "BinaryBert"
+}
+
+
 # Used for training
 TILT_LABELS = [
     'rightToInformation--Description',
@@ -26,10 +34,10 @@ TILT_LABELS = [
 
 # used for prediction
 SUPPORTED_LABELS = [
-    'Right to Information'
-    'Right to Deletion'
-    'Right to Data Portability'
-    'Right to Withdraw Consent'
+    'Right to Information',
+    'Right to Deletion',
+    'Right to Data Portability',
+    'Right to Withdraw Consent',
     'Right to Complain'
 ]
 

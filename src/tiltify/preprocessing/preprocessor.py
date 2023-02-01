@@ -7,7 +7,7 @@ from tiltify.data_structures.document import Document
 
 class Preprocessor(ABC):
 
-    label_retriever = LabelRetriever()
+    label_retriever = None
 
     @abstractmethod
     def preprocess(self, document_collection: DocumentCollection):

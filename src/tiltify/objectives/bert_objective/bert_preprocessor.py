@@ -86,7 +86,7 @@ class BERTPreprocessor(Preprocessor):
         self.bert_tokenizer = BertTokenizer.from_pretrained(self.bert_model)
         self.binary = binary
         self.batch_size = batch_size
-        self.label_retriever = LabelRetriever(supported_labels=label)
+        self.label_retriever = LabelRetriever(supported_label=label)
 
     def preprocess(self, document_collection: DocumentCollection):
         """This preprocessing function creates a corpus where all documents form a list of sentences and labels.
