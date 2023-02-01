@@ -2,15 +2,15 @@ from flask import Blueprint, Flask, request
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_restx import Api, fields, Resource
 
-from tiltify.config import EXTRACTOR_MODEL, FlaskConfig, EXTRACTOR_LABEL
+from tiltify.config import EXTRACTOR_MODEL, FlaskConfig, EXTRACTOR_LABEL, EXTRACTOR_CONFIG
 from tiltify.data_structures.document_collection import DocumentCollection
-from tiltify.extractors.extractor import Extractor
+from tiltify.extractors.extractor import ExtractorManager
 from tiltify.parsers.policy_parser import PolicyParser
 
 
 # Initialize Flask App
-extractor = Extractor(extractor_type=EXTRACTOR_MODEL, extractor_label=EXTRACTOR_LABEL)
-extractor.load()
+extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
+extractor_manager.load_all()
 policy_parser = PolicyParser()
 app = Flask(__name__)
 app.config.from_object(FlaskConfig)

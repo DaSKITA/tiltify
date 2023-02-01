@@ -15,12 +15,11 @@ EXTRACTOR_MODEL = "BinaryBert"  # "Test"
 EXTRACTOR_LABEL = 'Right to Deletion'
 
 # this should be possible with the exraction manager
-EXTRACTOR_CONFIG = {
-    "Right to Deletion": "BinaryBert",
-    "Right to Information": "BinaryBert",
-    ["Right to Withdraw Consent", "Right to Complain"]: "BinaryBert"
-}
-
+EXTRACTOR_CONFIG = [
+    ("BinaryBert", "Right to Deletion"),
+    ("Test", "Right to Information")
+    # ("BinaryBert", ["Right to Withdraw Consent", "Right to Complain"])
+]
 
 # Used for training
 TILT_LABELS = [
