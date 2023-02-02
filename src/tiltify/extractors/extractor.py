@@ -6,9 +6,7 @@ from typing import Union
 from tiltify.data_structures.document import Document
 from tiltify.config import Path
 from tiltify.data_structures.document_collection import DocumentCollection
-from tiltify.preprocessing.document_collection_splitter import DocumentCollectionSplitter
 
-from tiltify.objectives.bert_objective.bert_binary_objective import BERTBinaryObjective
 from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
 from tiltify.models.test_model import TestModel
 from tiltify.data_structures.annotation import PredictedAnnotation
@@ -142,6 +140,13 @@ class ExtractorManager:
             extractor = self._extractor_registry[label]
             if extractor:
                 extractor.train()
+                extractor.save()
+
+    def train_all(self):
+        for extractor, extractor_label in self._extractor_registry:
+            print(f"Training {extractor_label} Model...")
+            extractor.train()
+            extractor.save()
 
     def train_online(self, labels, documents):
         for label in labels:
@@ -198,7 +203,6 @@ class Extractor(ExtractorInterface):
 
 
 if __name__ == "__main__":
-    extractor = Extractor(TestModel, "Right to Information")
-    extractor.train()
-    extractor.save()
-    extractor.load()
+    from tiltify.config import EXTRACTOR_CONFIG
+    extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
+    extractor_manager.train_all()

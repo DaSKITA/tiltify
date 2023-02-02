@@ -2,7 +2,7 @@ from flask import Blueprint, Flask, request
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_restx import Api, fields, Resource
 
-from tiltify.config import EXTRACTOR_MODEL, FlaskConfig, EXTRACTOR_LABEL, EXTRACTOR_CONFIG
+from tiltify.config import FlaskConfig, EXTRACTOR_CONFIG
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.extractors.extractor import ExtractorManager
 from tiltify.parsers.policy_parser import PolicyParser
