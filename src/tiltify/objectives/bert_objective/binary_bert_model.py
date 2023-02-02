@@ -3,27 +3,23 @@ import torch
 from torch.optim import AdamW
 from tqdm import tqdm
 
-from tiltify.config import BASE_BERT_MODEL, LABEL_REPLACE
+from tiltify.config import BASE_BERT_MODEL
+from tiltify.data_structures.document import Document
 from tiltify.extractors.extraction_model import ExtractionModel
-from tiltify.data_structures.document import Document, PredictedAnnotation
 from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
 from tiltify.data_structures.document_collection import DocumentCollection
 
 
 class BinaryBERTModel(ExtractionModel):
 
-    def __init__(self, learning_rate=1e-3, weight_decay=1e-5, num_train_epochs=5, batch_size=2, k_ranks=5) -> None:
+    def __init__(self, learning_rate=1e-3, weight_decay=1e-5, num_train_epochs=5, batch_size=2, k_ranks=5, label=None) -> None:
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
+        self.k_ranks = k_ranks
         self.num_train_epochs = num_train_epochs
         self.model = BertForSequenceClassification.from_pretrained(BASE_BERT_MODEL, num_labels=1)
         self.device = torch.device("cpu")  # "cuda" if torch.cuda.is_available() else "cpu")
-        self.preprocessor = BERTPreprocessor(bert_model=BASE_BERT_MODEL, binary=True, batch_size=batch_size)
-        self.label_name = "Consumer_Right"
-        if k_ranks:
-            self.k_ranks = k_ranks
-        else:
-            self.k_ranks = len([key for key in LABEL_REPLACE.keys() if key])
+        self.preprocessor = BERTPreprocessor(bert_model=BASE_BERT_MODEL, binary=True, batch_size=batch_size, label=label)
 
     def train(self, document_collection: DocumentCollection):
         data_loader = self.preprocessor.preprocess(document_collection)
@@ -54,20 +50,18 @@ class BinaryBERTModel(ExtractionModel):
         logits = output.logits
         logits, indices = self.form_k_ranks(logits)
         indices = indices.detach().cpu().tolist()
-        predicted_annotations = [
-            PredictedAnnotation(blob_idx=idx, blob_text=document.blobs[idx].text, label=self.label_name)
-            for idx in indices]
-        return predicted_annotations
+        indices = sum(indices, [])
+        return indices
 
     def form_k_ranks(self, logits):
-        ranked_logits, indices = torch.sort(logits[1], descending=True, dim=0)
+        ranked_logits, indices = torch.sort(logits, descending=True, dim=0)
         return ranked_logits[:self.k_ranks], indices[:self.k_ranks]
 
     @classmethod
-    def load(cls, load_path):
-        model = BertForSequenceClassification.from_pretrained(load_path, num_labels=1)
+    def load(cls, load_path, label):
+        model = BertForSequenceClassification.from_pretrained(load_path, num_labels=1, local_files_only=True)
         model.eval()
-        init_obj = cls()
+        init_obj = cls(label=label)
         init_obj.model = model
         return init_obj
 

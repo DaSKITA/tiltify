@@ -1,4 +1,4 @@
-from tkinter import Label
+
 from typing import Dict, List
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 import torch
@@ -77,7 +77,8 @@ class TiltDataset(Dataset):
 class BERTPreprocessor(Preprocessor):
 
     def __init__(
-            self, bert_model: str = None, binary: bool = False, batch_size: float = 100) -> None:
+            self, bert_model: str = None, binary: bool = False, batch_size: float = 100,
+            label: list = None) -> None:
         if bert_model:
             self.bert_model = bert_model
         else:
@@ -85,7 +86,7 @@ class BERTPreprocessor(Preprocessor):
         self.bert_tokenizer = BertTokenizer.from_pretrained(self.bert_model)
         self.binary = binary
         self.batch_size = batch_size
-        self.label_retriever = LabelRetriever()
+        self.label_retriever = LabelRetriever(supported_label=label)
 
     def preprocess(self, document_collection: DocumentCollection):
         """This preprocessing function creates a corpus where all documents form a list of sentences and labels.

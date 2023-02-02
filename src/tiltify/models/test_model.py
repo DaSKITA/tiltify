@@ -9,9 +9,9 @@ from tiltify.data_structures.document_collection import DocumentCollection
 
 class TestModel(ExtractionModel):
 
-    def __init__(self, num_train_epochs=2) -> None:
+    def __init__(self, num_train_epochs=2, label=None) -> None:
         self.num_train_epochs = num_train_epochs
-        self.label_name = "Test_Right"
+        self.label = label
         self.model = False
 
     def train(self, document_collection: DocumentCollection):
@@ -28,15 +28,12 @@ class TestModel(ExtractionModel):
                 indices.append(random.choice(indexes))
         else:
             raise AssertionError("No Model loaded!")
-        predicted_annotations = [
-            PredictedAnnotation(blob_idx=idx, blob_text=document.blobs[idx].text, label=self.label_name)
-            for idx in indices]
-        return predicted_annotations
+        return indices
 
     @classmethod
-    def load(cls, load_path):
+    def load(cls, load_path, label):
         load_model = os.path.join(load_path, "test_model.txt")
-        init_obj = cls()
+        init_obj = cls(label=label)
         with open(load_model, "r") as f:
             lines = f.readlines()
         print(lines)

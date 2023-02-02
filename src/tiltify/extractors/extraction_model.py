@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod, abstractclassmethod
 class ExtractionModel(ABC):
 
     model = None
+    labels = None
 
     @abstractmethod
     def train(self):

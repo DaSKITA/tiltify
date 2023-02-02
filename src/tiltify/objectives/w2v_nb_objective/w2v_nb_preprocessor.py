@@ -1,15 +1,14 @@
-from typing import Dict, List, Tuple
-
-import numpy as np
+from typing import Dict, List
 import spacy
 import torch
-from torch.nn.utils.rnn import pad_sequence
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
+from tqdm import tqdm
 
-from tiltify.config import LABEL_REPLACE
-from tiltify.preprocessor import Preprocessor
+from tiltify.preprocessing.preprocessor import Preprocessor
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.data_structures.blob import Blob
+from tiltify.preprocessing.label_retriever import LabelRetriever
+from tiltify.data_structures.document import Document
 
 
 class W2VDataset(Dataset):
@@ -45,8 +44,8 @@ class W2VDataset(Dataset):
             a (n, 1) List containing the labels related to the sentence embeddings
         """
         assert len(sentences) == len(labels)
-        self.sentences = torch.stack(sentences) if not isinstance(sentences, torch.Tensor) else sentences
-        self.labels = torch.Tensor(labels) if not isinstance(labels, torch.Tensor) else labels #pad_sequence([torch.Tensor(sentence_labels) for sentence_labels in labels])
+        self.sentences = torch.stack([torch.from_numpy(array) for array in sentences])
+        self.labels = torch.Tensor(labels)
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
@@ -68,7 +67,9 @@ class W2VDataset(Dataset):
 
 class W2VPreprocessor(Preprocessor):
 
-    def __init__(self, en: bool = False, binary: bool = False, remove_stopwords: bool = False):
+    def __init__(
+            self, en: bool = False, binary: bool = False, remove_stopwords: bool = False,
+                label: list = None, weighted_sampling: bool = True, batch_size: int = 25):
         # requires prior install of spacy packages:
         # python -m spacy download en_core_web_lg
         # python -m spacy download de_core_news_lg
@@ -78,27 +79,32 @@ class W2VPreprocessor(Preprocessor):
             self.nlp = spacy.load("de_core_news_lg")
         self.binary = binary
         self.remove_stopwords = remove_stopwords
+        self.label_retriever = LabelRetriever(supported_label=label)
+        self.weighted_sampling = weighted_sampling
+        self.batch_size = batch_size
 
     def preprocess(self, document_collection: DocumentCollection):
-        w2v_dataset = self._create_w2v_dataset(document_collection)
-        return w2v_dataset
-
-    def _create_w2v_dataset(self, document_collection: DocumentCollection):
         sentence_list = []
         label_list = []
-        # TODO: adjust this one as tokenized sentences appended might cause bugs, also adjust for per document preds
-        for document in document_collection:
-            document_blobs = document.blobs
-            vectorized_sentences = self._vectorize_document(document_blobs)
-            labels = self._get_labels(document_blobs)
-            sentence_list.append(vectorized_sentences)
-            label_list.append(self._prepare_labels(labels))
+        for document in tqdm(document_collection):
+            embeddings, labels = self.preprocess_document(document)
+            sentence_list.append(embeddings)
+            label_list.append(labels)
 
         # flatten lists
-        sentence_list = [sentence for document in sentence_list for sentence in document]
-        label_list = [label for document in label_list for label in document]
+        sentence_list = sum(sentence_list, [])
+        label_list = sum(label_list, [])
+        dataset = W2VDataset(sentence_list, label_list)
+        data_loader = self.create_dataloader(dataset, weighted_sampling=self.weighted_sampling)
+        return data_loader
 
-        return W2VDataset(sentence_list, label_list)
+    def preprocess_document(self, document: Document):
+        labels = None
+        document_blobs = document.blobs
+        vectorized_sentences = self._vectorize_document(document_blobs)
+        labels = self.label_retriever.retrieve_labels(document.blobs)
+        labels = self.prepare_labels(labels)
+        return vectorized_sentences, labels
 
     def _vectorize_document(self, document_blobs: List[Blob]) -> torch.Tensor:
         """Tokenizes and pads a list of sentences using spacy.
@@ -120,17 +126,23 @@ class W2VPreprocessor(Preprocessor):
             blob_text = self.nlp(blob.text)
             if self.remove_stopwords:
                 blob_text = self.nlp(" ".join([str(word) for word in blob_text if str(word) not in self.nlp.Defaults.stop_words]))
-            vectors.append(torch.Tensor(blob_text.vector))
-        return torch.stack(vectors, dim=0)
+            vectors.append(blob_text.vector)
+        return vectors
 
-    def _get_labels(self, document_blobs: List[Blob]) -> List[str]:
-        # TODO: case where one blob has multiple annotations -> needs to be accessed in the model
-        labels = [blob.get_annotations()[0] if blob.get_annotations() else None for blob in document_blobs]
+    def prepare_labels(self, labels: List):
+        if self.binary:
+            labels = [int(label[0] > 0) for label in labels]
         return labels
 
-    def _prepare_labels(self, labels: List):
-        if self.binary:
-            label_data = [0 if entry is None else 1 for entry in labels] if labels else None
-        else:
-            label_data = [LABEL_REPLACE[entry] for entry in labels] if labels else None
-        return label_data
+    def create_dataloader(self, dataset, weighted_sampling=True) -> DataLoader:
+        sampler = None
+        if weighted_sampling:
+            sampler = self._create_sampler(dataset)
+        loader = DataLoader(dataset=dataset, batch_size=self.batch_size, sampler=sampler)
+        return loader
+
+    def _create_sampler(self, dataset: Dataset) -> WeightedRandomSampler:
+        class_weights = [
+            1 / torch.sum(dataset.labels == label).float() for label in dataset.labels.unique(sorted=True)]
+        sample_weights = torch.Tensor([class_weights[int(t)] for t in dataset.labels])
+        return WeightedRandomSampler(sample_weights, num_samples=sample_weights.shape[0])
