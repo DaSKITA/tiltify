@@ -108,9 +108,10 @@ class Train(Resource):
         """
         try:
             json_document_list = request.json.get('documents')
+            labels = request.json.get("labels")
             document_collection = DocumentCollection.from_json_dict(json_document_list)
             # TODO: extractor management
-            extractor.train_online(document_collection)
+            extractor_manager.train_online(labels, document_collection)
         except Exception as e:
             return f"Error: {e}", 500
         return "Training started", 202
@@ -132,7 +133,7 @@ class Predict(Resource):
         labels = request.json.get("labels")
         document = policy_parser.parse(
             **predict_input["document"], annotations=predict_input["annotations"])
-        predictions = extractor.predict(labels, document, predict_input["document"]["text"])
+        predictions = extractor_manager.predict(labels, document, predict_input["document"]["text"])
         predictions = {"predictions": [prediction.to_dict() for prediction in predictions]}
         return predictions, 200
 

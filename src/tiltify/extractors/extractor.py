@@ -63,8 +63,11 @@ class ExtractorRegistry:
         self.max = len(self.extractors)
 
     def __getitem__(self, idx: Union[str, list]):
-        label_idx = [index for index, label in enumerate(self.extractor_labels) if label == idx]
-        return self.extractors[label_idx[0]]
+        if idx in self.extractor_labels:
+            label_idx = [index for index, label in enumerate(self.extractor_labels) if label in idx]
+            return self.extractors[label_idx[0]]
+        else:
+            return None
 
     def __setitem__(self, idx: Union[str, list], value):
         if idx in self.extractor_labels:
@@ -108,14 +111,19 @@ class ExtractorManager:
     def _init_extractors(self, extractor_config: dict) -> None:
         for model_type, labels in extractor_config:
             extraction_model_cls = self._model_registry.get(model_type)
-            # model_path = os.path.join(
-            #     Path.root_path, f"src/tiltify/model_files/{extraction_model_cls.__name__}")
             # TODO: what to do with multiple labels?
             self._extractor_registry.append(labels, Extractor(
                 extraction_model_cls=extraction_model_cls, extractor_label=labels))
 
-    def predict(self):
-        pass
+    def predict(self, labels: str, document: Document, bare_document: str):
+        predictions = []
+        for label in labels:
+            extractor = self._extractor_registry[label]
+            if extractor:
+                extractor_predictions = extractor.predict(label, document, bare_document)
+                predictions.append(extractor_predictions)
+        predictions = sum(predictions, [])
+        return predictions
 
     def load(self, extractor_label):
         extractor = self._extractor_registry[extractor_label]
@@ -127,14 +135,19 @@ class ExtractorManager:
             print(f"Loading Model for {extractor_label}...")
             extractor.load()
             self._extractor_registry[extractor_label] = extractor
-
         print("All Models loaded!")
 
-    def train(self):
-        pass
+    def train(self, labels):
+        for label in labels:
+            extractor = self._extractor_registry[label]
+            if extractor:
+                extractor.train()
 
-    def train_online(self):
-        pass
+    def train_online(self, labels, documents):
+        for label in labels:
+            extractor = self._extractor_registry[label]
+            if extractor:
+                extractor.train(documents)
 
 
 class Extractor(ExtractorInterface):
@@ -184,10 +197,7 @@ class Extractor(ExtractorInterface):
             print(Warning("No Model loaded, online training not possible."))
 
 
-
-
 if __name__ == "__main__":
-    from tiltify.config import EXTRACTOR_MODEL, EXTRACTOR_LABEL
     extractor = Extractor(TestModel, "Right to Information")
     extractor.train()
     extractor.save()
