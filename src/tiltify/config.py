@@ -11,9 +11,6 @@ FINETUNED_BERT_MODEL_PATH = "model/bert-finetuned"
 DEFAULT_TEST_SPLIT_RATIO = 0.33
 RANDOM_SPLIT_SEED = 0
 
-EXTRACTOR_MODEL = "BinaryBert"  # "Test"
-EXTRACTOR_LABEL = 'Right to Deletion'
-
 # this should be possible with the exraction manager
 EXTRACTOR_CONFIG = [
     ("BinaryBert", "Right to Deletion"),
