@@ -128,7 +128,6 @@ class Predict(Resource):
         :return: list of tasks.
         """
         predict_input = request.json.get("document")
-        # TODO: extraction management with labels
         labels = request.json.get("labels")
         document = policy_parser.parse(
             **predict_input["document"], annotations=predict_input["annotations"])
