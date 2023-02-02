@@ -2,15 +2,15 @@ from flask import Blueprint, Flask, request
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_restx import Api, fields, Resource
 
-from tiltify.config import EXTRACTOR_MODEL, FlaskConfig, EXTRACTOR_LABEL
+from tiltify.config import FlaskConfig, EXTRACTOR_CONFIG
 from tiltify.data_structures.document_collection import DocumentCollection
-from tiltify.extractors.extractor import Extractor
+from tiltify.extractors.extractor import ExtractorManager
 from tiltify.parsers.policy_parser import PolicyParser
 
 
 # Initialize Flask App
-extractor = Extractor(extractor_type=EXTRACTOR_MODEL, extractor_label=EXTRACTOR_LABEL)
-extractor.load()
+extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
+extractor_manager.load_all()
 policy_parser = PolicyParser()
 app = Flask(__name__)
 app.config.from_object(FlaskConfig)
@@ -108,9 +108,10 @@ class Train(Resource):
         """
         try:
             json_document_list = request.json.get('documents')
+            labels = request.json.get("labels")
             document_collection = DocumentCollection.from_json_dict(json_document_list)
             # TODO: extractor management
-            extractor.train_online(document_collection)
+            extractor_manager.train_online(labels, document_collection)
         except Exception as e:
             return f"Error: {e}", 500
         return "Training started", 202
@@ -132,7 +133,7 @@ class Predict(Resource):
         labels = request.json.get("labels")
         document = policy_parser.parse(
             **predict_input["document"], annotations=predict_input["annotations"])
-        predictions = extractor.predict(labels, document, predict_input["document"]["text"])
+        predictions = extractor_manager.predict(labels, document, predict_input["document"]["text"])
         predictions = {"predictions": [prediction.to_dict() for prediction in predictions]}
         return predictions, 200
 
