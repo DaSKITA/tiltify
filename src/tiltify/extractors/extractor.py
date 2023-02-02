@@ -8,6 +8,7 @@ from tiltify.config import Path
 from tiltify.data_structures.document_collection import DocumentCollection
 
 from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
+from tiltify.models.gaussian_nb_model import GaussianNBModel
 from tiltify.models.test_model import TestModel
 from tiltify.data_structures.annotation import PredictedAnnotation
 
@@ -38,6 +39,7 @@ class ModelRegistry:
     model_registry = {
             "BinaryBert": BinaryBERTModel,
             "Test": TestModel,
+            "GaussianNB": GaussianNBModel
     }
 
     def __init__(self) -> None:
@@ -137,6 +139,7 @@ class ExtractorManager:
 
     def train(self, labels):
         for label in labels:
+            print(f"Training Model for {label}...")
             extractor = self._extractor_registry[label]
             if extractor:
                 extractor.train()
@@ -205,4 +208,4 @@ class Extractor(ExtractorInterface):
 if __name__ == "__main__":
     from tiltify.config import EXTRACTOR_CONFIG
     extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
-    extractor_manager.train_all()
+    extractor_manager.train(labels=["Right to Withdraw Consent"])

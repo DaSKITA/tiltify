@@ -6,14 +6,11 @@ from tiltify.config import FlaskConfig, EXTRACTOR_CONFIG
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.extractors.extractor import ExtractorManager
 from tiltify.parsers.policy_parser import PolicyParser
-from tiltify.training_scheduler import TrainingScheduler
 
 
 # Initialize Flask App
 extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
 extractor_manager.load_all()
-training_scheduler = TrainingScheduler(extractor_manager)
-training_scheduler.schedule_training()
 policy_parser = PolicyParser()
 app = Flask(__name__)
 app.config.from_object(FlaskConfig)

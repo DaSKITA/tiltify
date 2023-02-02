@@ -1,7 +1,5 @@
 from typing import Tuple, List
 
-import torch
-from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from sklearn.model_selection import train_test_split
 
 from tiltify.splitter import Splitter
@@ -31,17 +29,6 @@ class W2VSplitter(Splitter):
             return train, val, test
         else:
             return train, test
-
-    def _create_dataloader(self, dataset: Dataset) -> DataLoader:
-        sampler = self._create_sampler(dataset)
-        loader = DataLoader(dataset=dataset, batch_size=self.batch_size, sampler=sampler)
-        return loader
-
-    def _create_sampler(self, dataset: Dataset) -> WeightedRandomSampler:
-        class_weights = [
-            1 / torch.sum(dataset.labels == label).float() for label in dataset.labels.unique(sorted=True)]
-        sample_weights = torch.Tensor([class_weights[int(t)] for t in dataset.labels])
-        return WeightedRandomSampler(sample_weights, num_samples=sample_weights.shape[0])
 
     def _apply_splitted_idx(self, dataset: W2VDataset, split_idx_list: Tuple[List]) -> List[Dataset]:
         dataset_list = []

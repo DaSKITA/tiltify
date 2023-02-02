@@ -13,8 +13,10 @@ RANDOM_SPLIT_SEED = 0
 
 # this should be possible with the exraction manager
 EXTRACTOR_CONFIG = [
+    ("GaussianNB", "Right to Withdraw Consent"),
     ("BinaryBert", "Right to Deletion"),
     ("Test", "Right to Information")
+
     # ("BinaryBert", ["Right to Withdraw Consent", "Right to Complain"])
 ]
 
