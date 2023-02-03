@@ -74,7 +74,8 @@ predict_output = api.model('PredictOutput', {
 })
 
 train_input = api.model('TrainInput', {
-    'documents': fields.List(fields.Nested(document), required=True)
+    'documents': fields.List(fields.Nested(document), required=True),
+    'labels': fields.List(fields.String(description='Labels to which the documents to be trained belong'))
 })
 
 

@@ -155,7 +155,7 @@ class ExtractorManager:
         for label in labels:
             extractor = self._extractor_registry[label]
             if extractor:
-                extractor.train(documents)
+                extractor.train_online(documents)
 
 
 class Extractor(ExtractorInterface):
