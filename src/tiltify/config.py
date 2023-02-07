@@ -15,7 +15,8 @@ RANDOM_SPLIT_SEED = 0
 EXTRACTOR_CONFIG = [
     ("GaussianNB", "Right to Withdraw Consent"),
     ("BinaryBert", "Right to Deletion"),
-    ("Test", "Right to Information")
+    ("Test", "Right to Information"),
+    ("SentenceBert", "Right to Complain")
 
     # ("BinaryBert", ["Right to Withdraw Consent", "Right to Complain"])
 ]

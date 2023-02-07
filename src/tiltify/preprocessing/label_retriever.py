@@ -17,15 +17,15 @@ class LabelRetriever:
         else:
             self.tilt_labels_mapping = {tilt_label: idx for idx, tilt_label in enumerate(TILT_LABELS)}
 
-    def retrieve_labels(self, document_blobs: List[Blob]):
-        annotations = self.get_annotations(document_blobs)
-        labels = self.map_annotations(annotations)
+    def retrieve_labels(self, document_blobs: List[Blob]) -> Union[List[List[int]], List[int]]:
+        annotations = self._get_annotations(document_blobs)
+        labels = self._map_annotations(annotations)
         return labels
 
-    def get_annotations(self, document_blobs: List[Blob]) -> List[Union[List[Annotation], None]]:
+    def _get_annotations(self, document_blobs: List[Blob]) -> List[Union[List[Annotation], None]]:
         return [blob.get_annotations() for blob in document_blobs]
 
-    def map_annotations(self, annotations: List[Union[List[Annotation], None]]):
+    def _map_annotations(self, annotations: List[Union[List[Annotation], None]]) -> Union[List[List[int]], List[int]]:
         """Maps Annotations that are supported in the config.py to a Label. A Label is a list of Integers.
         Everything that can not be mapped is automatically written as [0]
 
