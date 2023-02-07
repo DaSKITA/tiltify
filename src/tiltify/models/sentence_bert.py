@@ -26,13 +26,13 @@ class SentenceBert(ExtractionModel):
 
     def train(self, document_collection: DocumentCollection):
         self.model = SentenceTransformer(self.pretrained_model)
-        triplet_corpus = self.preprocessor.preprocess(document_collection[:1])
+        triplet_corpus = self.preprocessor.preprocess(document_collection)
         triplet_corpus = DataLoader(
             triplet_corpus, shuffle=True, batch_size=self.batch_size,
             collate_fn=self.model.smart_batching_collate)
         train_loss = losses.TripletLoss(model=self.model, triplet_margin=5)
         self.model.fit(
-            train_objectives=[(triplet_corpus, train_loss)], epochs=1, warmup_steps=100)
+            train_objectives=[(triplet_corpus, train_loss)], epochs=self.num_train_epochs, warmup_steps=100)
         self.encoded_query = self.model.encode(self.preprocessor.query)
 
     def predict(self, document: Document):
