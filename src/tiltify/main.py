@@ -111,7 +111,8 @@ class Train(Resource):
         try:
             json_document_list = request.json.get('documents')
             labels = request.json.get("labels")
-            document_collection = DocumentCollection.from_json_dict(json_document_list)
+            json_dict = [{"document": entry, "annotations": []} for entry in json_document_list]
+            document_collection = DocumentCollection.from_json_dict(json_dict)
             extractor_manager.train_online(labels, document_collection)
         except Exception as e:
             return f"Error: {e}", 500
