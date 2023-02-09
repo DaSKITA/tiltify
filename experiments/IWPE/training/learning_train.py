@@ -1,5 +1,6 @@
 from sklearn.metrics import classification_report
 from tiltify.models.gaussian_nb_model import GaussianNBModel
+from tiltify.models.sentence_bert import SentenceBert
 from tiltify.models.test_model import TestModel
 from collections import defaultdict
 from tiltify.config import Path
@@ -8,6 +9,7 @@ import json
 import pathlib
 from tiltify.data_structures.document_collection import DocumentCollection
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 
 
 def get_documents(document_collection, train_doc_size):
@@ -19,7 +21,7 @@ def get_documents(document_collection, train_doc_size):
 def eval_model(model, doc_set):
     found_doc = []
     real_doc = []
-    for document in doc_set:
+    for document in tqdm(doc_set):
         doc_indexes = model.predict(document)
         labels = model.preprocessor.label_retriever.retrieve_labels(document.blobs)
         labels = model.preprocessor.prepare_labels(labels)
@@ -45,13 +47,14 @@ print(f"Training Sizes: {train_doc_sizes}")
 document_collection = DocumentCollection.from_json_files()
 doc_index = list(range(len(document_collection)))
 
-train_docs, test_docs = train_test_split(doc_index, test_size=0.33, random_state=config["random_state"], shuffle=False)
+train_docs, test_docs = train_test_split(
+    doc_index, test_size=0.33, random_state=config["random_state"], shuffle=False)
 train_docs = document_collection[train_docs]
 test_set = document_collection[test_docs]
 print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Docs.")
 
 
-model_types = [TestModel]
+model_types = [TestModel, GaussianNBModel, SentenceBert]
 
 for model_type in model_types:
     print(f"Conducting experment for {model_type.__name__}...")
@@ -74,10 +77,9 @@ for model_type in model_types:
             model.train(train_set)
             train_report = eval_model(model, train_set)
             test_report = eval_model(model, test_set)
-
             model.save(save_dir)
 
-            # TODO: add more metrics
+            # TODO: add more metrics and maybe also logits
             result_dict["train_size"].append(train_doc_size)
             result_dict["train_results"].append(train_report)
             result_dict["test_results"].append(test_report)
@@ -90,3 +92,5 @@ for model_type in model_types:
 
     with open(os.path.join(exp_dir, "config.json"), "w") as f:
         json.dump(config, f)
+
+print("Done!")
