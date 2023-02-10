@@ -43,15 +43,20 @@ class BinaryBERTModel(ExtractionModel):
                 lr_scheduler.step()
 
     def predict(self, document: Document):
+        logits = self._predict(document)
+        logits, indices = self.form_k_ranks(logits)
+        indices = indices.detach().cpu().tolist()
+        logits = logits.detach().cpu().tolist()
+        indices = sum(indices, [])
+        return indices, logits
+
+    def _predict(self, document):
         preprocessed_document, _ = self.preprocessor.preprocess_document(document)
         preprocessed_document = {k: v.to(self.device) for k, v in preprocessed_document.items()}
         with torch.no_grad():
             output = self.model(**preprocessed_document)
         logits = output.logits
-        logits, indices = self.form_k_ranks(logits)
-        indices = indices.detach().cpu().tolist()
-        indices = sum(indices, [])
-        return indices
+        return logits
 
     def form_k_ranks(self, logits):
         ranked_logits, indices = torch.sort(logits, descending=True, dim=0)

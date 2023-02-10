@@ -184,7 +184,7 @@ class Extractor(ExtractorInterface):
 
     def predict(self, labels: str, document: Document, bare_document: str):
         if self.extractor_label.split("--")[-1] in labels:
-            predictions = self.extraction_model.predict(document)
+            predictions, logits = self.extraction_model.predict(document)
             predictions = [
                 PredictedAnnotation.from_model_prediction(
                     idx, document, bare_document, self.extractor_label) for idx in predictions]

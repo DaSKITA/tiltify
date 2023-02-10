@@ -22,7 +22,7 @@ def eval_model(model, doc_set):
     found_doc = []
     real_doc = []
     for document in tqdm(doc_set):
-        doc_indexes = model.predict(document)
+        doc_indexes, logits = model.predict(document)
         labels = model.preprocessor.label_retriever.retrieve_labels(document.blobs)
         labels = model.preprocessor.prepare_labels(labels)
         found_blob = sum([labels[index] > 0 for index in doc_indexes]) > 0

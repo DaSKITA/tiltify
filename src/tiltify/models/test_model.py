@@ -3,8 +3,9 @@ import random
 from tqdm import tqdm
 from typing import List
 import os
+import numpy as np
 from tiltify.extractors.extraction_model import ExtractionModel
-from tiltify.data_structures.document import Document, PredictedAnnotation
+from tiltify.data_structures.document import Document
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.preprocessing.preprocessor import Preprocessor
 from tiltify.preprocessing.label_retriever import LabelRetriever
@@ -26,14 +27,23 @@ class TestModel(ExtractionModel):
         self.model = True
 
     def predict(self, document: Document):
-        indexes = list(range(len(document.blobs)))
-        indices = list()
         if self.model:
-            for i in range(self.k_ranks):
-                indices.append(random.choice(indexes))
+            indices = list()
+            logits = self._predict(document)
+            indices, logits = self.form_k_ranks(logits)
         else:
             raise AssertionError("No Model loaded!")
-        return indices
+        return indices[:self.k_ranks], logits[self.k_ranks]
+
+    def _predict(self, document):
+        logits = []
+        for blob in document.blobs:
+            logits.append(random.uniform(0, 1))
+        return logits
+
+    def form_k_ranks(self, logits):
+        indices = np.argsort(logits)
+        return indices, logits[indices]
 
     @classmethod
     def load(cls, load_path, label):

@@ -36,11 +36,15 @@ class SentenceBert(ExtractionModel):
         self.encoded_query = self.model.encode(self.preprocessor.query)
 
     def predict(self, document: Document):
+        cos_scores = self._predict(document)
+        logits, indices = self.form_k_ranks(cos_scores)
+        return indices.detach().cpu().tolist(), logits.detach().cpu().tolist()
+
+    def _predict(self, document: Document):
         blob_texts = [blob.text for blob in document.blobs]
         encoded_corpus = self.model.encode(blob_texts, convert_to_tensor=True)
         cos_scores = util.cos_sim(self.encoded_query, encoded_corpus)[0]
-        logits, indices = torch.topk(cos_scores, k=self.k_ranks)
-        return indices.cpu().tolist()
+        return cos_scores
 
     @classmethod
     def load(cls, load_path, label):
@@ -92,7 +96,7 @@ class SentenceBertPreprocessor:
 
     def preprocess_document(self, document: Document):
         labels = self.label_retriever.retrieve_labels(document.blobs)
-        labels = self._prepare_labels(labels)  # binarize labels
+        labels = self.prepare_labels(labels)  # binarize labels
         positive_data = []
         negative_data = []
         for blob, label in zip(document.blobs, labels):
@@ -107,7 +111,7 @@ class SentenceBertPreprocessor:
             for combination in itertools.product([self.query], positive_data, negative_data)]
         return triplet_data
 
-    def _prepare_labels(self, labels: list):
+    def prepare_labels(self, labels: list):
         """Binarize Labels if necessray.
         Only Labels that are above 1 are matched. As the preprocessor tries to identify relevant blobs.
 

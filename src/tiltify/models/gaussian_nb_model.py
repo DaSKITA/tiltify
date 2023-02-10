@@ -35,7 +35,7 @@ class GaussianNBModel(ExtractionModel):
                                             weighted_sampling=weighted_sampling)
 
     def train(self, document_collection: DocumentCollection):
-        data_loader = self.preprocessor.preprocess(document_collection[:3])
+        data_loader = self.preprocessor.preprocess(document_collection)
         self.model = GaussianNB(priors=self.prior)
 
         for epoch in tqdm(range(self.num_train_epochs)):
@@ -44,10 +44,14 @@ class GaussianNBModel(ExtractionModel):
                     X=batch["sentences"], y=batch["labels"], classes=list(self.classes.values()))
 
     def predict(self, document: Document):
+        logits = self._predict(document)
+        logits, indices = self.form_k_ranks(logits)
+        return indices, logits
+
+    def _predict(self, document: Document):
         preprocessed_document, _ = self.preprocessor.preprocess_document(document)
         logits = self.model.predict_proba(preprocessed_document)
-        logits, indices = self.form_k_ranks(logits)
-        return indices
+        return logits
 
     def form_k_ranks(self, logits):
         idx = self.classes.get(self.label, None)
