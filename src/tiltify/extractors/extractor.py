@@ -3,16 +3,34 @@ import os
 import pathlib
 from typing import Union
 
-from tiltify.data_structures.document import Document
-from tiltify.config import Path
-from tiltify.data_structures.document_collection import DocumentCollection
+from flask_executor import Executor
 
-from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
+from tiltify.config import Path, TILTIFY_ADD, TILTIFY_PORT
+from tiltify.data_structures.annotation import PredictedAnnotation
+from tiltify.data_structures.document import Document
+from tiltify.data_structures.document_collection import DocumentCollection
+from tiltify.main import app
 from tiltify.models.gaussian_nb_model import GaussianNBModel
 from tiltify.models.sentence_bert import SentenceBert
 from tiltify.models.test_model import TestModel
-from tiltify.data_structures.annotation import PredictedAnnotation
+from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
 
+executor = Executor(app)
+
+@executor
+def train_model(model, data_list: DocumentCollection, label: str):
+    learning_MANAGER = lEARNINGmANGER()
+    document
+    learning_MANAGER.learn(data_list)
+
+    model.train(document_collection=data_list)
+    model.save()
+
+    payload = {
+        "extractor_label": label
+    }
+    requests.post(f"{TILTIFY_ADD}:{TILTIFY_PORT}" + "/api/reload", json=payload, timeout=3000,
+                  headers={'Content-Type': 'application/json'})
 
 class ExtractorInterface(ABC):
 
@@ -99,7 +117,7 @@ class ExtractorRegistry:
 
 class ExtractorManager:
 
-    def __init__(self, extractor_config: list,) -> None:
+    def __init__(self, extractor_config: list) -> None:
         self._model_registry = ModelRegistry()
         self._extractor_registry = ExtractorRegistry()
         self._init_extractors(extractor_config=extractor_config)
@@ -162,7 +180,7 @@ class ExtractorManager:
 
 class Extractor(ExtractorInterface):
 
-    def __init__(self, extraction_model_cls, extractor_label, model_path=None) -> None:
+    def __init__(self, extraction_model_cls, extractor_label, model_path=None, batch_size: int = 32) -> None:
 
         self.extractor_label = extractor_label
         if not model_path:
@@ -170,6 +188,9 @@ class Extractor(ExtractorInterface):
                 Path.root_path, f"src/tiltify/model_files/{self.__class__.__name__}")
         self.model_path = os.path.join(model_path, f"{self.extractor_label}")
         self.extraction_model_cls = extraction_model_cls
+        self.batch_size = batch_size
+        self.train_size = 0
+        self.train_collection = DocumentCollection()
 
     def train(self):
         document_collection = DocumentCollection.from_json_files()
@@ -200,11 +221,14 @@ class Extractor(ExtractorInterface):
         self.extraction_model.save(self.model_path)
 
     def train_online(self, document_collection: DocumentCollection):
-        if self.extraction_model:
-            self.extraction_model.train(document_collection=document_collection)
-            self.save()
-        else:
-            print(Warning("No Model loaded, online training not possible."))
+        self.train_collection.append(document_collection)
+        self.train_size += 1
+        if self.train_size >= self.batch_size:
+            if self.extraction_model:
+                train_model.submit(self.extraction_model, self.train_collection, self.extractor_label)
+                self.train_queue = []
+            else:
+                print(Warning("No Model loaded, online training not possible."))
 
 
 if __name__ == "__main__":

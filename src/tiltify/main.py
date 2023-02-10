@@ -2,17 +2,18 @@ from flask import Blueprint, Flask, request
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_restx import Api, fields, Resource
 
-from tiltify.config import FlaskConfig, EXTRACTOR_CONFIG
+# Initialize Flask App
+app = Flask(__name__)
+
+from tiltify.config import EXTRACTOR_CONFIG, FlaskConfig, INTERNAL_KEY, TILTIFY_ADD, TILTIFY_PORT
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.extractors.extractor import ExtractorManager
 from tiltify.parsers.policy_parser import PolicyParser
 
-
-# Initialize Flask App
+# initialize ExtractorManager, PolicyParser and load FlaskConfig
 extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
 extractor_manager.load_all()
 policy_parser = PolicyParser()
-app = Flask(__name__)
 app.config.from_object(FlaskConfig)
 
 # API namespace
@@ -78,6 +79,10 @@ train_input = api.model('TrainInput', {
     'labels': fields.List(fields.String(description='Labels to which the documents to be trained belong'))
 })
 
+reload_instructuin = api.model('ReloadInstruction', {
+    'extractor_label': fields.String(description='Label specifying Extractor to update', required=True)
+})
+
 
 # API authentication
 @api.route("/auth")
@@ -105,9 +110,6 @@ class Train(Resource):
     @jwt_required()
     def post(self):
         # Websockets? : https://blog.miguelgrinberg.com/post/add-a-websocket-route-to-your-flask-2-x-application
-        """
-        :return: list of tasks.
-        """
         try:
             json_document_list = request.json.get('documents')
             labels = request.json.get("labels")
@@ -127,7 +129,7 @@ class Predict(Resource):
     @jwt_required()
     def post(self):
         """
-        :return: list of tasks.
+        :return: list of predictions.
         """
         predict_input = request.json.get("document")
         labels = request.json.get("labels")
@@ -137,8 +139,19 @@ class Predict(Resource):
         predictions = {"predictions": [prediction.to_dict() for prediction in predictions]}
         return predictions, 200
 
+@api.route('/reload')
+class Reload(Resource):
+
+    @api.expect(reload_instruction)
+    def post(self):
+        if request.json.get("key") == INTERNAL_KEY:
+            extractor_label = request.json.get("extractor_label")
+            ExtractorManager.load(label)
+            return "Success!", 200
+        else:
+            return "Unauthorized", 401
 
 if __name__ == "__main__":
     app.run(
-        host="0.0.0.0", port="5001", use_debugger=False, use_reloader=False,
+        host=TILTIFY_ADD, port=TILTIFY_PORT, use_debugger=False, use_reloader=False,
         passthrough_errors=True)

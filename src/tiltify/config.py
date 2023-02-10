@@ -40,6 +40,8 @@ SUPPORTED_LABELS = [
     'Right to Complain'
 ]
 
+TILTIFY_ADD = os.environ.get("TILTIFY_ADD", "0.0.0.0")
+TILTIFY_PORT = os.environ.get("TILTIFY_PORT", 5000)
 
 class Path:
 
