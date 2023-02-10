@@ -50,7 +50,9 @@ class BinaryBERTModel(ExtractionModel):
         with torch.no_grad():
             output = self.model(**preprocessed_document)
         logits = output.logits
-        return logits.detach().cpu().tolist()
+        logits = logits.detach().cpu().tolist()
+        logits = sum(logits, [])
+        return logits
 
     @classmethod
     def load(cls, load_path, label):

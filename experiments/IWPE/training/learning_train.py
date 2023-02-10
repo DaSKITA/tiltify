@@ -21,7 +21,7 @@ def get_documents(document_collection, train_doc_size):
 
 
 def eval_model(model, doc_set, k_ranks):
-    print(f"#### Starting evaluation of {model.__class__.__name__}... ####")
+    print(f"Starting evaluation of {model.__class__.__name__}...")
     metrics_dict = {}
     found_doc = []
     real_doc = []
@@ -65,14 +65,14 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 
 
 model_types = [
-    TestModel,
-    GaussianNBModel,
-    SentenceBert,
+    #TestModel,
+    #GaussianNBModel,
+    #SentenceBert,
     BinaryBERTModel
     ]
 
 for model_type in model_types:
-    print(f"Conducting experment for {model_type.__name__}...")
+    print(f"#### Conducting experment for {model_type.__name__}... ####")
     model_cls = model_type
     model_kwargs = dict(
         label=config["label"]
