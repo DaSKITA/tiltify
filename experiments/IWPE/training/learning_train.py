@@ -30,7 +30,7 @@ def eval_model(model, doc_set, k_ranks):
         labels = model.preprocessor.prepare_labels(labels)
         logits = model.predict(document)
         log_based_preds = [logit > 0.5 for logit in logits]
-        metrics_dict["classify_metrics"] = classification_report(labels, log_based_preds, output_dict=True, digits=2)
+        metrics_dict["classify_metrics"] = classification_report(labels, log_based_preds, output_dict=True, digits=2, zero_division=0)
         for k_rank in k_ranks:
             ranker = KRanker(k_rank)
             doc_indexes, _ = ranker.form_k_ranks(logits)
@@ -38,7 +38,7 @@ def eval_model(model, doc_set, k_ranks):
             real_blob = sum(labels) > 0
             found_doc.append(found_blob)
             real_doc.append(real_blob)
-        metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2)
+        metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)
     return metrics_dict
 
 
