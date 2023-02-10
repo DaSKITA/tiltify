@@ -35,7 +35,7 @@ class GaussianNBModel(ExtractionModel):
                                             weighted_sampling=weighted_sampling)
 
     def train(self, document_collection: DocumentCollection):
-        data_loader = self.preprocessor.preprocess(document_collection)
+        data_loader = self.preprocessor.preprocess(document_collection[:3])
         self.model = GaussianNB(priors=self.prior)
 
         for epoch in tqdm(range(self.num_train_epochs)):

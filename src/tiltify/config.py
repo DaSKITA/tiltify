@@ -15,7 +15,8 @@ RANDOM_SPLIT_SEED = 0
 EXTRACTOR_CONFIG = [
     ("GaussianNB", "Right to Withdraw Consent"),
     ("BinaryBert", "Right to Deletion"),
-    ("Test", "Right to Information")
+    ("Test", "Right to Information"),
+    ("SentenceBert", "Right to Complain")
 
     # ("BinaryBert", ["Right to Withdraw Consent", "Right to Complain"])
 ]
@@ -56,6 +57,8 @@ class FlaskConfig(object):
         # Secrets
         BASE_PATH = os.path.abspath(os.path.dirname(__file__))
         DEPLOYMENT = os.environ.get("DEPLOYMENT", False)
+        if DEPLOYMENT is False:
+            DEBUG = True
 
         JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
         JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)

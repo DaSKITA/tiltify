@@ -47,11 +47,11 @@ document = api.model('Document', {
 annotation = api.model('Annotation', {
     'annotation_label': fields.String(required=True, description='Label to which this annotation belongs'),
     'annotation_text': fields.String(required=True, description='Text of annotation'),
-    'annotation_start': fields.Integer(required=True, description='Starting position oftext annotation in the document text'),
+    'annotation_start': fields.Integer(required=True, description='Starting position of text annotation in the document text'),
     'annotation_end': fields.Integer(required=True, description='Ending position of annotation in the document text')
 })
 
-prediction_document = api.model('PredictionDocument', {
+annotated_document = api.model('PredictionDocument', {
     'document': fields.Nested(document, required=True, description='Document data'),
     'annotations': fields.List(fields.Nested(annotation), required=True,
                                description='List of annotations available for this document')
@@ -65,7 +65,7 @@ predict_annotation = api.model('PredictAnnotation', {
 })
 
 predict_input = api.model('PredictInput', {
-    'document': fields.Nested(prediction_document, required=True),
+    'document': fields.Nested(annotated_document, required=True),
     'labels': fields.List(fields.String(description='Label to calculate predictions for'), required=True)
 })
 
@@ -74,7 +74,8 @@ predict_output = api.model('PredictOutput', {
 })
 
 train_input = api.model('TrainInput', {
-    'documents': fields.List(fields.Nested(document), required=True)
+    'documents': fields.List(fields.Nested(annotated_document), required=True),
+    'labels': fields.List(fields.String(description='Labels to which the documents to be trained belong'))
 })
 
 

@@ -9,6 +9,7 @@ from tiltify.data_structures.document_collection import DocumentCollection
 
 from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
 from tiltify.models.gaussian_nb_model import GaussianNBModel
+from tiltify.models.sentence_bert import SentenceBert
 from tiltify.models.test_model import TestModel
 from tiltify.data_structures.annotation import PredictedAnnotation
 
@@ -39,7 +40,8 @@ class ModelRegistry:
     model_registry = {
             "BinaryBert": BinaryBERTModel,
             "Test": TestModel,
-            "GaussianNB": GaussianNBModel
+            "GaussianNB": GaussianNBModel,
+            "SentenceBert": SentenceBert
     }
 
     def __init__(self) -> None:
@@ -155,7 +157,7 @@ class ExtractorManager:
         for label in labels:
             extractor = self._extractor_registry[label]
             if extractor:
-                extractor.train(documents)
+                extractor.train_online(documents)
 
 
 class Extractor(ExtractorInterface):
@@ -208,4 +210,4 @@ class Extractor(ExtractorInterface):
 if __name__ == "__main__":
     from tiltify.config import EXTRACTOR_CONFIG
     extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
-    extractor_manager.train(labels=["Right to Withdraw Consent"])
+    extractor_manager.train(labels=["Right to Complain"])
