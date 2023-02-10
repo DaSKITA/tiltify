@@ -63,9 +63,9 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 
 
 model_types = [
-    TestModel
-    # GaussianNBModel,
-    # SentenceBert
+    TestModel,
+    GaussianNBModel,
+    SentenceBert
     ]
 ranker = KRanker(config["k_ranks"])
 

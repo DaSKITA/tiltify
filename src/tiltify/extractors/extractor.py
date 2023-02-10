@@ -126,7 +126,7 @@ class ExtractorManager:
                 extractor_predictions = extractor.predict(label, document, bare_document)
                 predictions.append(extractor_predictions)
             else:
-                predictions.append(PredictedAnnotation())
+                predictions.append([PredictedAnnotation()])
         predictions = sum(predictions, [])
         return predictions
 
@@ -188,7 +188,7 @@ class Extractor(ExtractorInterface):
 
     def predict(self, labels: str, document: Document, bare_document: str):
         logits = self.extraction_model.predict(document)
-        indices = self.k_ranker.form_k_ranks(logits)
+        indices, _ = self.k_ranker.form_k_ranks(logits)
         predictions = [
             PredictedAnnotation.from_model_prediction(
                 idx, document, bare_document, self.extractor_label) for idx in indices]
@@ -212,4 +212,5 @@ class Extractor(ExtractorInterface):
 if __name__ == "__main__":
     from tiltify.config import EXTRACTOR_CONFIG
     extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
-    extractor_manager.train(labels=["Right to Complain"])
+    #extractor_manager.train(labels=["Right to Complain"])
+    extractor_manager.train_all()
