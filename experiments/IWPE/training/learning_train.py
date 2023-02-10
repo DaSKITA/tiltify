@@ -21,7 +21,7 @@ def get_documents(document_collection, train_doc_size):
 
 
 def eval_model(model, doc_set, k_ranks):
-    print(f"Starting evaluation of {model.__class__.__name__}...")
+    print(f"#### Starting evaluation of {model.__class__.__name__}... ####")
     metrics_dict = {}
     found_doc = []
     real_doc = []
