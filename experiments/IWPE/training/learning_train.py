@@ -8,6 +8,7 @@ import os
 import json
 import pathlib
 from tiltify.data_structures.document_collection import DocumentCollection
+from tiltify.extractors.k_ranker import KRanker
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
@@ -18,18 +19,25 @@ def get_documents(document_collection, train_doc_size):
     return document_collection[:(doc_cnt-1)]
 
 
-def eval_model(model, doc_set):
+def eval_model(model, doc_set, ranker):
     found_doc = []
     real_doc = []
     for document in tqdm(doc_set):
-        doc_indexes, logits = model.predict(document)
+        logits = model.predict(document)
+        doc_indexes, _ = ranker.form_k_ranks(logits)
         labels = model.preprocessor.label_retriever.retrieve_labels(document.blobs)
         labels = model.preprocessor.prepare_labels(labels)
+        log_based_preds = [logit > 0.5 for logit in logits]
         found_blob = sum([labels[index] > 0 for index in doc_indexes]) > 0
         real_blob = sum(labels) > 0
         found_doc.append(found_blob)
         real_doc.append(real_blob)
-    return classification_report(real_doc, found_doc, output_dict=True, digits=2)
+    krank_metrics = classification_report(real_doc, found_doc, output_dict=True, digits=2)
+    classify_metrics = classification_report(labels, log_based_preds, output_dict=True, digits=2)
+    return {
+        "k_rank_metrics": krank_metrics,
+        "classify_metrics": classify_metrics
+    }
 
 
 config = {
@@ -54,13 +62,18 @@ test_set = document_collection[test_docs]
 print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Docs.")
 
 
-model_types = [TestModel, GaussianNBModel, SentenceBert]
+model_types = [
+    TestModel
+    # GaussianNBModel,
+    # SentenceBert
+    ]
+ranker = KRanker(config["k_ranks"])
 
 for model_type in model_types:
     print(f"Conducting experment for {model_type.__name__}...")
     model_cls = model_type
     model_kwargs = dict(
-        label=config["label"], k_ranks=config["k_ranks"]
+        label=config["label"]
     )
     exp_dir = os.path.join(Path.root_path, f"experiments/IWPE/training/{model_cls.__name__}")
 
@@ -75,8 +88,8 @@ for model_type in model_types:
 
             train_set = get_documents(train_docs, train_doc_size)
             model.train(train_set)
-            train_report = eval_model(model, train_set)
-            test_report = eval_model(model, test_set)
+            train_report = eval_model(model, train_set, ranker)
+            test_report = eval_model(model, test_set, ranker)
             model.save(save_dir)
 
             # TODO: add more metrics and maybe also logits

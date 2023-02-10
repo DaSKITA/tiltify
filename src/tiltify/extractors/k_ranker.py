@@ -1,5 +1,5 @@
 from typing import List
-
+import numpy as np
 
 class KRanker:
 
@@ -7,5 +7,6 @@ class KRanker:
         self.k_ranks = k_ranks
 
     def form_k_ranks(self, logits: List[float]) -> List[int]:
-        indices = sorted(logits, key=lambda k: logits[k])
-        return indices[self.k_ranks], logits[indices][self.k_ranks]
+        logits = np.array(logits)
+        indices = np.argsort(logits)[::-1].tolist()
+        return indices[:self.k_ranks], logits[indices].tolist()[:self.k_ranks]
