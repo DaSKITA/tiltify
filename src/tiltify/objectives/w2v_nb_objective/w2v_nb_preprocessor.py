@@ -73,6 +73,7 @@ class W2VPreprocessor(Preprocessor):
         # requires prior install of spacy packages:
         # python -m spacy download en_core_web_lg
         # python -m spacy download de_core_news_lg
+        # TODO: this is not glove (https://spacy.io/models/en)
         if en:
             self.nlp = spacy.load("en_core_web_lg")
         else:
