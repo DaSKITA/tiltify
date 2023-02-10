@@ -7,10 +7,11 @@ from tiltify.data_structures.document import Document
 from tiltify.config import Path
 from tiltify.data_structures.document_collection import DocumentCollection
 
-from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
+from tiltify.models.binary_bert_model import BinaryBERTModel
 from tiltify.models.gaussian_nb_model import GaussianNBModel
 from tiltify.models.sentence_bert import SentenceBert
 from tiltify.models.test_model import TestModel
+from tiltify.extractors.k_ranker import KRanker
 from tiltify.data_structures.annotation import PredictedAnnotation
 
 
@@ -124,6 +125,8 @@ class ExtractorManager:
             if extractor:
                 extractor_predictions = extractor.predict(label, document, bare_document)
                 predictions.append(extractor_predictions)
+            else:
+                predictions.append(PredictedAnnotation())
         predictions = sum(predictions, [])
         return predictions
 
@@ -162,7 +165,7 @@ class ExtractorManager:
 
 class Extractor(ExtractorInterface):
 
-    def __init__(self, extraction_model_cls, extractor_label, model_path=None) -> None:
+    def __init__(self, extraction_model_cls, extractor_label, model_path=None, k_ranks=5) -> None:
 
         self.extractor_label = extractor_label
         if not model_path:
@@ -170,6 +173,7 @@ class Extractor(ExtractorInterface):
                 Path.root_path, f"src/tiltify/model_files/{self.__class__.__name__}")
         self.model_path = os.path.join(model_path, f"{self.extractor_label}")
         self.extraction_model_cls = extraction_model_cls
+        self.k_ranker = KRanker(k_ranks)
 
     def train(self):
         document_collection = DocumentCollection.from_json_files()
@@ -183,13 +187,11 @@ class Extractor(ExtractorInterface):
         # experiment.run(k=k, trials=trials, num_processes=num_processes)
 
     def predict(self, labels: str, document: Document, bare_document: str):
-        if self.extractor_label.split("--")[-1] in labels:
-            predictions, logits = self.extraction_model.predict(document)
-            predictions = [
-                PredictedAnnotation.from_model_prediction(
-                    idx, document, bare_document, self.extractor_label) for idx in predictions]
-        else:
-            predictions = [PredictedAnnotation()]
+        logits = self.extraction_model.predict(document)
+        indices = self.k_ranker.form_k_ranks(logits)
+        predictions = [
+            PredictedAnnotation.from_model_prediction(
+                idx, document, bare_document, self.extractor_label) for idx in indices]
         return predictions
 
     def load(self):

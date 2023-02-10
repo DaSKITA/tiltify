@@ -1,6 +1,5 @@
 import os
 from sentence_transformers import SentenceTransformer, losses, util, InputExample
-import torch
 import itertools
 from torch.utils.data import DataLoader
 
@@ -12,10 +11,9 @@ from tiltify.preprocessing.label_retriever import LabelRetriever
 
 class SentenceBert(ExtractionModel):
 
-    def __init__(self, label, num_train_epochs=5, k_ranks=5, en=False, batch_size=10, binary=True) -> None:
+    def __init__(self, label, num_train_epochs=5, en=False, batch_size=10, binary=True) -> None:
         self.label = label
         self.num_train_epochs = num_train_epochs
-        self.k_ranks = k_ranks
         self.batch_size = batch_size
         if en:
             self.pretrained_model = 'dbmdz/bert-base-english-cased'
@@ -35,16 +33,11 @@ class SentenceBert(ExtractionModel):
             train_objectives=[(triplet_corpus, train_loss)], epochs=self.num_train_epochs, warmup_steps=100)
         self.encoded_query = self.model.encode(self.preprocessor.query)
 
-    def predict(self, document: Document):
-        cos_scores = self._predict(document)
-        logits, indices = self.form_k_ranks(cos_scores)
-        return indices.detach().cpu().tolist(), logits.detach().cpu().tolist()
-
-    def _predict(self, document: Document):
+    def predict(self, document: Document) -> list[float]:
         blob_texts = [blob.text for blob in document.blobs]
         encoded_corpus = self.model.encode(blob_texts, convert_to_tensor=True)
         cos_scores = util.cos_sim(self.encoded_query, encoded_corpus)[0]
-        return cos_scores
+        return cos_scores.detach().cpu().tolist()
 
     @classmethod
     def load(cls, load_path, label):
@@ -59,10 +52,6 @@ class SentenceBert(ExtractionModel):
         save_path = os.path.join(save_path, "sbert")
         self.model.save(save_path)
 
-    def form_k_ranks(self, logits):
-        ranked_logits, indices = torch.sort(logits, descending=True, dim=0)
-        return ranked_logits[:self.k_ranks], indices[:self.k_ranks]
-
 
 class SentenceBertPreprocessor:
 
@@ -70,8 +59,10 @@ class SentenceBertPreprocessor:
         'Right to Information': "Das Bestehen eines Rechts auf Auskunft seitens des Verantwortlichen über die"
                                 "betreffenden personenbezogenen Daten.",
         'Right to Deletion': "Die betroffene Person hat das Recht, von dem Verantwortlichen unverzüglich die"
-                                "Berichtigung sie betreffender unrichtiger personenbezogener Daten zu verlangen."
-                                "Die betroffene Person hat das Recht, von dem Verantwortlichen zu verlangen, dass sie betreffende"
+                                "Berichtigung sie betreffender unrichtiger personenbezogener Daten zu"
+                                "verlangen."
+                                "Die betroffene Person hat das Recht, von dem Verantwortlichen zu verlangen, "
+                                "dass sie betreffende"
                                 "personenbezogene Daten unverzüglich gelöscht werden.",
         'Right to Data Portability': "Die betroffene Person hat das Recht, die sie betreffenden "
                                         "personenbezogenen Daten, die sie einem Verantwortlichen"

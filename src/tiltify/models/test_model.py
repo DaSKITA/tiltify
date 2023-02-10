@@ -3,7 +3,6 @@ import random
 from tqdm import tqdm
 from typing import List
 import os
-import numpy as np
 from tiltify.extractors.extraction_model import ExtractionModel
 from tiltify.data_structures.document import Document
 from tiltify.data_structures.document_collection import DocumentCollection
@@ -13,11 +12,10 @@ from tiltify.preprocessing.label_retriever import LabelRetriever
 
 class TestModel(ExtractionModel):
 
-    def __init__(self, num_train_epochs=2, label=None, k_ranks=5) -> None:
+    def __init__(self, num_train_epochs=2, label=None) -> None:
         self.num_train_epochs = num_train_epochs
         self.label = label
         self.model = False
-        self.k_ranks = k_ranks
         self.preprocessor = TestPreprocessor(label)
 
     def train(self, document_collection: DocumentCollection):
@@ -26,24 +24,14 @@ class TestModel(ExtractionModel):
                 sleep(0.5)
         self.model = True
 
-    def predict(self, document: Document):
+    def predict(self, document: Document) -> list[float]:
         if self.model:
-            indices = list()
-            logits = self._predict(document)
-            indices, logits = self.form_k_ranks(logits)
+            logits = []
+            for blob in document.blobs:
+                logits.append(random.uniform(0, 1))
         else:
             raise AssertionError("No Model loaded!")
-        return indices[:self.k_ranks], logits[self.k_ranks]
-
-    def _predict(self, document):
-        logits = []
-        for blob in document.blobs:
-            logits.append(random.uniform(0, 1))
         return logits
-
-    def form_k_ranks(self, logits):
-        indices = np.argsort(logits)
-        return indices, logits[indices]
 
     @classmethod
     def load(cls, load_path, label):

@@ -1,4 +1,4 @@
-from tiltify.objectives.bert_objective.bert_preprocessor import TiltDataset
+from tiltify.preprocessing.bert_preprocessor import TiltDataset
 from typing import Tuple, List
 from sklearn.model_selection import train_test_split
 

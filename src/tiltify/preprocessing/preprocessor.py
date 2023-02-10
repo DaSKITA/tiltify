@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
 from tiltify.data_structures.document_collection import DocumentCollection
-from tiltify.preprocessing.label_retriever import LabelRetriever
 from tiltify.data_structures.document import Document
 
 
