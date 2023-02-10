@@ -38,7 +38,7 @@ def eval_model(model, doc_set, k_ranks):
             real_blob = sum(labels) > 0
             found_doc.append(found_blob)
             real_doc.append(real_blob)
-        metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)
+            metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)
     return metrics_dict
 
 
