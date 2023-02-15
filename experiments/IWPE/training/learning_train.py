@@ -25,7 +25,7 @@ def eval_model(model, doc_set, k_ranks):
     metrics_dict = {}
     found_doc = []
     real_doc = []
-    for document in tqdm(doc_set[:5]):
+    for document in tqdm(doc_set):
         labels = model.preprocessor.label_retriever.retrieve_labels(document.blobs)
         labels = model.preprocessor.prepare_labels(labels)
         logits = model.predict(document)
@@ -65,7 +65,7 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 
 
 model_types = [
-    TestModel,
+    # TestModel,
     GaussianNBModel,
     SentenceBert,
     BinaryBERTModel
@@ -75,8 +75,7 @@ for model_type in model_types:
     print(f"#### Conducting experment for {model_type.__name__}... ####")
     model_cls = model_type
     model_kwargs = dict(
-        label=config["label"],
-        batch_size= 
+        label=config["label"]
     )
     exp_dir = os.path.join(Path.root_path, f"experiments/IWPE/training/{model_cls.__name__}")
 
@@ -90,6 +89,7 @@ for model_type in model_types:
             pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
 
             train_set = get_documents(train_docs, train_doc_size)
+            print(f"Starting training of {model_cls.__name__}...")
             model.train(train_set)
             train_report = eval_model(model, train_set, config["k_ranks"])
             test_report = eval_model(model, test_set, config["k_ranks"])

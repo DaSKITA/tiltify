@@ -13,7 +13,7 @@ class GaussianNBModel(ExtractionModel):
     _params_names = ["class_count_", "class_prior_", "classes_", "epsilon_", "sigma_", "theta_"]
 
     def __init__(
-        self, prior=None, label=None, num_train_epochs=100, remove_stopwords=True,
+        self, prior=None, label=None, num_train_epochs=100, remove_stopwords=False,
             n_classes=2, en=False, weighted_sampling=True) -> None:
         self.num_train_epochs = num_train_epochs
         self.label = label

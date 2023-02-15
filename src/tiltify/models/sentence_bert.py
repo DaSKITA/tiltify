@@ -12,7 +12,7 @@ from tiltify.preprocessing.label_retriever import LabelRetriever
 
 class SentenceBert(ExtractionModel):
 
-    def __init__(self, label, num_train_epochs=5, en=False, batch_size=50, binary=True) -> None:
+    def __init__(self, label, num_train_epochs=5, en=False, batch_size=20, binary=True) -> None:
         self.label = label
         self.num_train_epochs = num_train_epochs
         self.batch_size = batch_size
@@ -32,8 +32,8 @@ class SentenceBert(ExtractionModel):
             collate_fn=self.model.smart_batching_collate)
         train_loss = losses.TripletLoss(model=self.model, triplet_margin=5)
         self.model.fit(
-            train_objectives=[(triplet_corpus, train_loss)], epochs=self.num_train_epochs, warmup_steps=100)
-        self.encoded_query = self.model.encode(self.preprocessor.query)
+             train_objectives=[(triplet_corpus, train_loss)], epochs=self.num_train_epochs, warmup_steps=100)
+        self.encoded_query = self.model.encode(self.preprocessor.query, convert_to_tensor=True)
 
     def predict(self, document: Document) -> list[float]:
         blob_texts = [blob.text for blob in document.blobs]
