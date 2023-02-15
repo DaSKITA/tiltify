@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import os
 import pathlib
 from typing import Union
+import requests
 
 from flask_executor import Executor
 
@@ -19,9 +20,8 @@ executor = Executor(app)
 
 @executor
 def train_model(model, data_list: DocumentCollection, label: str):
-    learning_MANAGER = lEARNINGmANGER()
-    document
-    learning_MANAGER.learn(data_list)
+    learning_manager = LearningManager()
+    learning_manager.learn(data_list)
 
     model.train(document_collection=data_list)
     model.save()
