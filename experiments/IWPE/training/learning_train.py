@@ -65,9 +65,9 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 
 
 model_types = [
-    #TestModel,
-    #GaussianNBModel,
-    #SentenceBert,
+    TestModel,
+    GaussianNBModel,
+    SentenceBert,
     BinaryBERTModel
     ]
 
@@ -75,7 +75,8 @@ for model_type in model_types:
     print(f"#### Conducting experment for {model_type.__name__}... ####")
     model_cls = model_type
     model_kwargs = dict(
-        label=config["label"]
+        label=config["label"],
+        batch_size= 
     )
     exp_dir = os.path.join(Path.root_path, f"experiments/IWPE/training/{model_cls.__name__}")
 

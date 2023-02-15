@@ -2,6 +2,7 @@ import os
 from sentence_transformers import SentenceTransformer, losses, util, InputExample
 import itertools
 from torch.utils.data import DataLoader
+import torch
 
 from tiltify.extractors.extraction_model import ExtractionModel
 from tiltify.data_structures.document_collection import DocumentCollection
@@ -11,7 +12,7 @@ from tiltify.preprocessing.label_retriever import LabelRetriever
 
 class SentenceBert(ExtractionModel):
 
-    def __init__(self, label, num_train_epochs=5, en=False, batch_size=10, binary=True) -> None:
+    def __init__(self, label, num_train_epochs=5, en=False, batch_size=50, binary=True) -> None:
         self.label = label
         self.num_train_epochs = num_train_epochs
         self.batch_size = batch_size
@@ -21,9 +22,10 @@ class SentenceBert(ExtractionModel):
             self.pretrained_model = 'dbmdz/bert-base-german-cased'
         self.preprocessor = SentenceBertPreprocessor(self.label, binary)
         self.encoded_query = None
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
     def train(self, document_collection: DocumentCollection):
-        self.model = SentenceTransformer(self.pretrained_model)
+        self.model = SentenceTransformer(self.pretrained_model, device=self.device)
         triplet_corpus = self.preprocessor.preprocess(document_collection)
         triplet_corpus = DataLoader(
             triplet_corpus, shuffle=True, batch_size=self.batch_size,

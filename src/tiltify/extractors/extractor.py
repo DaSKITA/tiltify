@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import os
 import pathlib
 from typing import Union
+import torch
 
 from tiltify.data_structures.document import Document
 from tiltify.config import Path
@@ -180,6 +181,7 @@ class Extractor(ExtractorInterface):
         # bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
         # train, val, test = bert_splitter.split(document_collection)
         self.extraction_model = self.extraction_model_cls(label=self.extractor_label)
+        if torch.cuda.is_available() and self.extraction_model
         self.extraction_model.train(document_collection=document_collection)
         # experiment = Experiment(
         #     experiment_path=self.model_path, folder_name=self.__class__.__name__)
