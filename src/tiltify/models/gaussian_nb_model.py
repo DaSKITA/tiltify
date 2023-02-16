@@ -1,10 +1,9 @@
 from tqdm import tqdm
-import numpy as np
 import os
 import pickle
 
 from tiltify.extractors.extraction_model import ExtractionModel
-from tiltify.objectives.w2v_nb_objective.w2v_nb_preprocessor import W2VPreprocessor
+from tiltify.preprocessing.w2v_nb_preprocessor import W2VPreprocessor
 from tiltify.data_structures.document import Document
 from tiltify.data_structures.document_collection import DocumentCollection
 from sklearn.naive_bayes import GaussianNB
@@ -14,11 +13,10 @@ class GaussianNBModel(ExtractionModel):
     _params_names = ["class_count_", "class_prior_", "classes_", "epsilon_", "sigma_", "theta_"]
 
     def __init__(
-        self, prior=None, k_ranks=5, label=None, num_train_epochs=100, remove_stopwords=True,
+        self, prior=None, label=None, num_train_epochs=100, remove_stopwords=False,
             n_classes=2, en=False, weighted_sampling=True) -> None:
         self.num_train_epochs = num_train_epochs
         self.label = label
-        self.k_ranks = k_ranks
         if prior:
             self.prior = prior
         else:
@@ -35,7 +33,7 @@ class GaussianNBModel(ExtractionModel):
                                             weighted_sampling=weighted_sampling)
 
     def train(self, document_collection: DocumentCollection):
-        data_loader = self.preprocessor.preprocess(document_collection[:3])
+        data_loader = self.preprocessor.preprocess(document_collection)
         self.model = GaussianNB(priors=self.prior)
 
         for epoch in tqdm(range(self.num_train_epochs)):
@@ -46,14 +44,9 @@ class GaussianNBModel(ExtractionModel):
     def predict(self, document: Document):
         preprocessed_document, _ = self.preprocessor.preprocess_document(document)
         logits = self.model.predict_proba(preprocessed_document)
-        logits, indices = self.form_k_ranks(logits)
-        return indices
-
-    def form_k_ranks(self, logits):
         idx = self.classes.get(self.label, None)
         label_logits = logits[:, idx]
-        indices = np.argsort(label_logits)
-        return logits[indices][:self.k_ranks], indices[:self.k_ranks]
+        return label_logits
 
     @classmethod
     def load(cls, load_path, label):

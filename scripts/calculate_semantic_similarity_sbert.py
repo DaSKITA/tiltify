@@ -4,7 +4,7 @@ import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
 from sentence_transformers import SentenceTransformer, util
 from tiltify.data_structures.document_collection import DocumentCollection
-from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
+from tiltify.preprocessing.bert_preprocessor import BERTPreprocessor
 from time import gmtime, strftime
 
 # Excerpts from DSGVO, that define the analyzed rights

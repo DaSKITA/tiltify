@@ -3,7 +3,7 @@ from typing import Tuple, List
 from sklearn.model_selection import train_test_split
 
 from tiltify.splitter import Splitter
-from tiltify.objectives.w2v_nb_objective.w2v_nb_preprocessor import W2VDataset
+from tiltify.preprocessing.w2v_nb_preprocessor import W2VDataset
 
 
 class W2VSplitter(Splitter):
