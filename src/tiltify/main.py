@@ -81,7 +81,7 @@ train_input = api.model('TrainInput', {
     'labels': fields.List(fields.String(description='Labels to which the documents to be trained belong'))
 })
 
-reload_instructuin = api.model('ReloadInstruction', {
+reload_instruction = api.model('ReloadInstruction', {
     'extractor_label': fields.String(description='Label specifying Extractor to update', required=True)
 })
 
@@ -92,9 +92,9 @@ class Authentication(Resource):
 
     @api.expect(password)
     def post(self):
-        password = request.json.get("password", None)
+        key = request.json.get("password", None)
 
-        if password == FlaskConfig.JWT_SECRET_KEY:
+        if key == FlaskConfig.JWT_SECRET_KEY:
             access_token = create_access_token(identity="TILTer")
             return access_token, 200
         else:
@@ -104,8 +104,6 @@ class Authentication(Resource):
 # API paths
 @api.route('/train')
 class Train(Resource):
-
-    # Exchange with a CronJob and poll database directly
 
     @api.expect(train_input)
     @api.doc(security='apikey')
@@ -141,6 +139,7 @@ class Predict(Resource):
         predictions = {"predictions": [prediction.to_dict() for prediction in predictions]}
         return predictions, 200
 
+
 @api.route('/reload')
 class Reload(Resource):
 
@@ -148,7 +147,7 @@ class Reload(Resource):
     def post(self):
         if request.json.get("key") == INTERNAL_KEY:
             extractor_label = request.json.get("extractor_label")
-            ExtractorManager.load(label)
+            ExtractorManager.load(extractor_label)
             return "Success!", 200
         else:
             return "Unauthorized", 401

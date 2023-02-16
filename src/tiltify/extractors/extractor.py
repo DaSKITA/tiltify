@@ -3,9 +3,7 @@ import os
 import pathlib
 from typing import Union
 import torch
-from concurrent.futures import ProcessPoolExecutor
-import multiprocessing as mp
-ctx = mp.get_context("spawn")
+
 
 from tiltify.config import Path, TILTIFY_ADD, TILTIFY_PORT
 from tiltify.data_structures.annotation import PredictedAnnotation
@@ -109,6 +107,7 @@ class ExtractorManager:
     def __init__(self, extractor_config: list) -> None:
         self._model_registry = ModelRegistry()
         self._extractor_registry = ExtractorRegistry()
+        self._learning_manager = LearningManager(extractor_registry=self._extractor_registry)
         self._init_extractors(extractor_config=extractor_config)
 
         """
@@ -151,27 +150,13 @@ class ExtractorManager:
         print("All Models loaded!")
 
     def train(self, labels):
-        for label in labels:
-            print(f"Training Model for {label}...")
-            extractor = self._extractor_registry[label]
-            if extractor:
-                extractor.train()
-                extractor.save()
+        self._learning_manager.train(labels)
 
     def train_all(self):
-        for extractor, extractor_label in self._extractor_registry:
-            print(f"Training {extractor_label} Model...")
-            extractor.train()
-            extractor.save()
+        self._learning_manager.train_all()
 
-    def start_permanent_training(self):
-        learning_manager = LearningManager(extractor_registry=self._extractor_registry)
-        with ProcessPoolExecutor(mp_context=ctx) as executor:
-            learning_future = executor.submit(self._start_permanent_training, learning_manager)
-
-    @staticmethod
-    def _start_permanent_training(learning_manager):
-        pass
+    def train_online(self, document_collection):
+        self._learning_manager.train_online(document_collection)
 
 
 class Extractor(ExtractorInterface):
@@ -213,14 +198,10 @@ class Extractor(ExtractorInterface):
         self.extraction_model.save(self.model_path)
 
     def train_online(self, document_collection: DocumentCollection):
-        self.train_collection.append(document_collection)
-        self.train_size += 1
-        if self.train_size >= self.batch_size:
-            if self.extraction_model:
-                train_model.submit(self.extraction_model, self.train_collection, self.extractor_label)
-                self.train_queue = []
-            else:
-                print(Warning("No Model loaded, online training not possible."))
+        if self.extraction_model:
+            self.extraction_model.train(document_collection)
+        else:
+            print(Warning("No Model loaded, online training not possible."))
 
 
 if __name__ == "__main__":
