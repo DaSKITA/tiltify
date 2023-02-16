@@ -1,5 +1,5 @@
 import pytest
-from tiltify.objectives.bert_objective.bert_preprocessor import BERTPreprocessor
+from tiltify.preprocessing.bert_preprocessor import BERTPreprocessor
 
 
 @pytest.fixture

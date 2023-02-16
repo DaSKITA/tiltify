@@ -4,7 +4,7 @@ from tqdm import tqdm
 from typing import List
 import os
 from tiltify.extractors.extraction_model import ExtractionModel
-from tiltify.data_structures.document import Document, PredictedAnnotation
+from tiltify.data_structures.document import Document
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.preprocessing.preprocessor import Preprocessor
 from tiltify.preprocessing.label_retriever import LabelRetriever
@@ -12,11 +12,10 @@ from tiltify.preprocessing.label_retriever import LabelRetriever
 
 class TestModel(ExtractionModel):
 
-    def __init__(self, num_train_epochs=2, label=None, k_ranks=5) -> None:
+    def __init__(self, num_train_epochs=2, label=None) -> None:
         self.num_train_epochs = num_train_epochs
         self.label = label
         self.model = False
-        self.k_ranks = k_ranks
         self.preprocessor = TestPreprocessor(label)
 
     def train(self, document_collection: DocumentCollection):
@@ -25,15 +24,14 @@ class TestModel(ExtractionModel):
                 sleep(0.5)
         self.model = True
 
-    def predict(self, document: Document):
-        indexes = list(range(len(document.blobs)))
-        indices = list()
+    def predict(self, document: Document) -> list[float]:
         if self.model:
-            for i in range(self.k_ranks):
-                indices.append(random.choice(indexes))
+            logits = []
+            for blob in document.blobs:
+                logits.append(random.uniform(0, 1))
         else:
             raise AssertionError("No Model loaded!")
-        return indices
+        return logits
 
     @classmethod
     def load(cls, load_path, label):

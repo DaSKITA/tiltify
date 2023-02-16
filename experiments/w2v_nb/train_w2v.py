@@ -5,7 +5,7 @@ from rapidflow.experiments.experiment import Experiment
 
 from tiltify.config import BASE_BERT_MODEL, Path
 from tiltify.data_structures.document_collection import DocumentCollection
-from tiltify.objectives.w2v_nb_objective.w2v_nb_preprocessor import W2VPreprocessor
+from tiltify.preprocessing.w2v_nb_preprocessor import W2VPreprocessor
 from tiltify.objectives.w2v_nb_objective.w2v_nb_splitter import W2VSplitter
 from tiltify.objectives.w2v_nb_objective.w2v_nb_objective import W2VBinaryObjective, W2VRightToObjective
 
