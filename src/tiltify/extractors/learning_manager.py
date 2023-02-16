@@ -7,9 +7,11 @@ class LearningManager:
         self._extractor_registry = extractor_registry
         self.max_batch_size = max_batch_size
 
-    @staticmethod
     def _learning_surveilance(extractor_registry):
-        
+        pass
 
     def get_number_of_annotations(label):
+        pass
+
+    def main(self):
         pass

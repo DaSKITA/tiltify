@@ -25,20 +25,27 @@ def eval_model(model, doc_set, k_ranks):
     metrics_dict = {}
     found_doc = []
     real_doc = []
+    all_log_preds = []
+    all_labels = []
     for document in tqdm(doc_set):
         labels = model.preprocessor.label_retriever.retrieve_labels(document.blobs)
         labels = model.preprocessor.prepare_labels(labels)
         logits = model.predict(document)
         log_based_preds = [logit > 0.5 for logit in logits]
-        metrics_dict["classify_metrics"] = classification_report(labels, log_based_preds, output_dict=True, digits=2, zero_division=0)
-        for k_rank in k_ranks:
-            ranker = KRanker(k_rank)
-            doc_indexes, _ = ranker.form_k_ranks(logits)
-            found_blob = sum([labels[index] > 0 for index in doc_indexes]) > 0
-            real_blob = sum(labels) > 0
-            found_doc.append(found_blob)
-            real_doc.append(real_blob)
-            metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)
+        all_log_preds.append(log_based_preds)
+        all_labels.append(labels)
+
+    for k_rank in k_ranks:
+        ranker = KRanker(k_rank)
+        k_rank_found = []
+        k_rank_real = []
+        for idx, doc_logs in enumerate(all_log_preds):
+            doc_labels = all_labels[idx]
+            doc_indexes, _ = ranker.form_k_ranks(doc_logs)
+            k_rank_found.append(sum([doc_labels[index] > 0 for index in doc_indexes]) > 0)
+            k_rank_real.append(sum(doc_labels) > 0)
+        metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(k_rank_real, k_rank_found, output_dict=True, digits=2, zero_division=0)
+    metrics_dict["classify_metrics"] = classification_report(labels, log_based_preds, output_dict=True, digits=2, zero_division=0)
     return metrics_dict
 
 
@@ -65,10 +72,10 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 
 
 model_types = [
-    # TestModel,
-    SentenceBert,
-    BinaryBERTModel,
-    GaussianNBModel
+    TestModel,
+    # SentenceBert,
+    # BinaryBERTModel,
+    # GaussianNBModel
     ]
 
 for model_type in model_types:
