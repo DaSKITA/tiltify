@@ -3,36 +3,23 @@ import os
 import pathlib
 from typing import Union
 import torch
-
-from flask_executor import Executor
+from concurrent.futures import ProcessPoolExecutor
+import multiprocessing as mp
+ctx = mp.get_context("spawn")
 
 from tiltify.config import Path, TILTIFY_ADD, TILTIFY_PORT
 from tiltify.data_structures.annotation import PredictedAnnotation
 from tiltify.data_structures.document import Document
 from tiltify.data_structures.document_collection import DocumentCollection
-
 from tiltify.models.binary_bert_model import BinaryBERTModel
 from tiltify.models.gaussian_nb_model import GaussianNBModel
 from tiltify.models.sentence_bert import SentenceBert
 from tiltify.models.test_model import TestModel
 from tiltify.extractors.k_ranker import KRanker
 from tiltify.data_structures.annotation import PredictedAnnotation
+from tiltify.extractors.learning_manager import LearningManager
 
-executor = Executor(app)
 
-@executor
-def train_model(model, data_list: DocumentCollection, label: str):
-    learning_manager = LearningManager()
-    learning_manager.learn(data_list)
-
-    model.train(document_collection=data_list)
-    model.save()
-
-    payload = {
-        "extractor_label": label
-    }
-    requests.post(f"{TILTIFY_ADD}:{TILTIFY_PORT}" + "/api/reload", json=payload, timeout=3000,
-                  headers={'Content-Type': 'application/json'})
 
 class ExtractorInterface(ABC):
 
@@ -123,6 +110,7 @@ class ExtractorManager:
         self._model_registry = ModelRegistry()
         self._extractor_registry = ExtractorRegistry()
         self._init_extractors(extractor_config=extractor_config)
+
         """
 
         Args:
@@ -134,8 +122,9 @@ class ExtractorManager:
         for model_type, labels in extractor_config:
             extraction_model_cls = self._model_registry.get(model_type)
             # TODO: what to do with multiple labels?
-            self._extractor_registry.append(labels, Extractor(
-                extraction_model_cls=extraction_model_cls, extractor_label=labels))
+            extractor = Extractor(
+                extraction_model_cls=extraction_model_cls, extractor_label=labels)
+            self._extractor_registry.append(labels, extractor)
 
     def predict(self, labels: str, document: Document, bare_document: str):
         predictions = []
@@ -175,11 +164,14 @@ class ExtractorManager:
             extractor.train()
             extractor.save()
 
-    def train_online(self, labels, documents):
-        for label in labels:
-            extractor = self._extractor_registry[label]
-            if extractor:
-                extractor.train_online(documents)
+    def start_permanent_training(self):
+        learning_manager = LearningManager(extractor_registry=self._extractor_registry)
+        with ProcessPoolExecutor(mp_context=ctx) as executor:
+            learning_future = executor.submit(self._start_permanent_training, learning_manager)
+
+    @staticmethod
+    def _start_permanent_training(learning_manager):
+        pass
 
 
 class Extractor(ExtractorInterface):
@@ -199,7 +191,6 @@ class Extractor(ExtractorInterface):
         # bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
         # train, val, test = bert_splitter.split(document_collection)
         self.extraction_model = self.extraction_model_cls(label=self.extractor_label)
-        if torch.cuda.is_available() and self.extraction_model
         self.extraction_model.train(document_collection=document_collection)
         # experiment = Experiment(
         #     experiment_path=self.model_path, folder_name=self.__class__.__name__)

@@ -2,13 +2,14 @@ from flask import Blueprint, Flask, request
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_restx import Api, fields, Resource
 
-# Initialize Flask App
-app = Flask(__name__)
-
 from tiltify.config import EXTRACTOR_CONFIG, FlaskConfig, INTERNAL_KEY, TILTIFY_ADD, TILTIFY_PORT
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.extractors.extractor import ExtractorManager
 from tiltify.parsers.policy_parser import PolicyParser
+
+# Initialize Flask App
+app = Flask(__name__)
+
 
 # initialize ExtractorManager, PolicyParser and load FlaskConfig
 extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
@@ -32,6 +33,7 @@ api = Api(api_bp, version='1.0', title='TILTify API', doc='/docs/',
           authorizations=authorizations, default='TILTify auth, train & predict',
           default_label='Contains paths to authorization for or training and predicting with TILTify',)
 app.register_blueprint(api_bp)
+
 
 jwt = JWTManager(app)
 
@@ -150,6 +152,7 @@ class Reload(Resource):
             return "Success!", 200
         else:
             return "Unauthorized", 401
+
 
 if __name__ == "__main__":
     app.run(
