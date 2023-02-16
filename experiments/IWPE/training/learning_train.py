@@ -66,9 +66,9 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 
 model_types = [
     # TestModel,
-    GaussianNBModel,
     SentenceBert,
-    BinaryBERTModel
+    BinaryBERTModel,
+    GaussianNBModel
     ]
 
 for model_type in model_types:
@@ -85,26 +85,29 @@ for model_type in model_types:
     for k in range(config["repitions"]):
         result_dict = defaultdict(list)
         for train_doc_size in train_doc_sizes:
-            save_dir = os.path.join(exp_dir, f"{train_doc_size}/{k}")
-            pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
+            try:
+                save_dir = os.path.join(exp_dir, f"{train_doc_size}/{k}")
+                pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
 
-            train_set = get_documents(train_docs, train_doc_size)
-            print(f"Starting training of {model_cls.__name__}...")
-            model.train(train_set)
-            train_report = eval_model(model, train_set, config["k_ranks"])
-            test_report = eval_model(model, test_set, config["k_ranks"])
-            model.save(save_dir)
+                train_set = get_documents(train_docs, train_doc_size)
+                print(f"Starting training of {model_cls.__name__}...")
+                model.train(train_set)
+                train_report = eval_model(model, train_set, config["k_ranks"])
+                test_report = eval_model(model, test_set, config["k_ranks"])
+                model.save(save_dir)
 
-            # TODO: add more metrics and maybe also logits
-            result_dict["train_size"].append(train_doc_size)
-            result_dict["train_results"].append(train_report)
-            result_dict["test_results"].append(test_report)
-            results[k] = result_dict
+                # TODO: add more metrics and maybe also logits
+                result_dict["train_size"].append(train_doc_size)
+                result_dict["train_results"].append(train_report)
+                result_dict["test_results"].append(test_report)
+                results[k] = result_dict
 
-            result_dir = os.path.join(exp_dir, "results.json")
+                result_dir = os.path.join(exp_dir, "results.json")
 
-            with open(result_dir, "w") as f:
-                json.dump(results, f)
+                with open(result_dir, "w") as f:
+                    json.dump(results, f)
+            except RuntimeError:
+                print(f"{model_type} for {train_doc_size} could not be trained. Skipping...")
 
     with open(os.path.join(exp_dir, "config.json"), "w") as f:
         json.dump(config, f)
