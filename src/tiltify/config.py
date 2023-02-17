@@ -13,10 +13,10 @@ RANDOM_SPLIT_SEED = 0
 
 # this should be possible with the exraction manager
 EXTRACTOR_CONFIG = [
-    ("GaussianNB", "Right to Withdraw Consent"),
+    # ("GaussianNB", "Right to Withdraw Consent"),
     ("BinaryBert", "Right to Deletion"),
-    ("Test", "Right to Information"),
-    ("SentenceBert", "Right to Complain")
+    # ("Test", "Right to Deletion"),
+    # ("SentenceBert", "Right to Complain")
 
     # ("BinaryBert", ["Right to Withdraw Consent", "Right to Complain"])
 ]
@@ -42,6 +42,8 @@ SUPPORTED_LABELS = [
 
 TILTIFY_ADD = os.environ.get("TILTIFY_ADD", "0.0.0.0")
 TILTIFY_PORT = os.environ.get("TILTIFY_PORT", 5000)
+
+INTERNAL_KEY = os.environ.get("INTERNAL_KEY", "VerySecretInternalKey")
 
 class Path:
 

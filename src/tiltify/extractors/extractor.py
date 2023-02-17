@@ -18,7 +18,6 @@ from tiltify.data_structures.annotation import PredictedAnnotation
 from tiltify.extractors.learning_manager import LearningManager
 
 
-
 class ExtractorInterface(ABC):
 
     extraction_model_cls = None
@@ -39,7 +38,6 @@ class ExtractorInterface(ABC):
     @abstractmethod
     def train_online(self, document: DocumentCollection):
         pass
-
 
 class ModelRegistry:
     model_registry = {
@@ -107,7 +105,7 @@ class ExtractorManager:
     def __init__(self, extractor_config: list) -> None:
         self._model_registry = ModelRegistry()
         self._extractor_registry = ExtractorRegistry()
-        self._learning_manager = LearningManager(extractor_registry=self._extractor_registry)
+        self._learning_manager = LearningManager(extractor_registry=self._extractor_registry, storage_size=1)
         self._init_extractors(extractor_config=extractor_config)
 
         """
@@ -124,6 +122,12 @@ class ExtractorManager:
             extractor = Extractor(
                 extraction_model_cls=extraction_model_cls, extractor_label=labels)
             self._extractor_registry.append(labels, extractor)
+
+    def get_learning_manager_storage(self):
+        return self._learning_manager.get_storage()
+
+    def get_registry_data(self):
+        return [(extractor, label) for extractor, label in self._extractor_registry]
 
     def predict(self, labels: str, document: Document, bare_document: str):
         predictions = []
@@ -155,8 +159,8 @@ class ExtractorManager:
     def train_all(self):
         self._learning_manager.train_all()
 
-    def train_online(self, document_collection):
-        self._learning_manager.train_online(document_collection)
+    def train_online(self, document_collection, label):
+        self._learning_manager.train_online(document_collection, label)
 
 
 class Extractor(ExtractorInterface):

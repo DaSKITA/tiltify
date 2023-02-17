@@ -1,7 +1,9 @@
+import requests
 from concurrent.futures import ProcessPoolExecutor
 import multiprocessing as mp
-ctx = mp.get_context("spawn")
+ctx = mp.get_context("fork")
 
+from tiltify.config import INTERNAL_KEY, TILTIFY_ADD, TILTIFY_PORT
 from tiltify.data_structures.document_collection import DocumentCollection
 
 
@@ -9,27 +11,43 @@ class LearningManager:
 
     def __init__(self, extractor_registry, storage_size=15) -> None:
         self._extractor_registry = extractor_registry
-        self._annotation_storage = {}
+        self._annotated_collection_storage = {}
         self.storage_size = storage_size
 
+    def get_storage(self):
+        return self._annotated_collection_storage
+
     def is_storage_full(self, label):
-        return len(self._annotation_storage.setdefault(label, [])) >= self.storage_size
+        return len(self._annotated_collection_storage.setdefault(label, [])) >= self.storage_size
 
     def process_mini_batch(self, label):
-        # This function should merge the according batch into a single DocumentCollection object
-        # maybe even write a merge function in DocumentCollection or
-        # utils, where a batch can be merged into a single DocumentCollection?
-        document_collection_batched = DocumentCollection()
-        for batch_dc in self._annotation_storage.setdefault(label, []):
+        document_collection_batched = DocumentCollection([])
+        for batch_dc in self._annotated_collection_storage.setdefault(label, []):
+            doc = batch_dc[0]
             try:
-                idx = [doc.title for doc in document_collection_batched].index(batch_dc[0].title)
-                # TODO: add_annotations function doesnt exist, it would be cool to have functionalities
-                # as seen in PolicyParser for adding annotations to an existing DocumentCollection/Document object
-                document_collection_batched[idx].add_annotations(batch_dc["annotations"])
+                idx = [doc.title for doc in document_collection_batched].index(doc.title)
+                document_collection_batched[idx].copy_annotations(doc)
             except ValueError:
-                # TODO: handle batch_dc not in document_collection_batched e.g. add batch_dc as Document
-                pass
-        return document_collection_batched
+                document_collection_batched.documents.append(doc)
+        return document_collection_batched  # if batch_dc else None
+
+    @staticmethod
+    def storage_train(data, extractor, label):
+        print("starting concurrent training")
+        extractor.train_online(document_collection=data)
+        print("training finished")
+        extractor.save()
+        print("model saved")
+
+        payload = {
+            "key": INTERNAL_KEY,
+            "extractor_label": label
+        }
+
+        print("starting request")
+        requests.post(f"http://{TILTIFY_ADD}:{TILTIFY_PORT}" + "/api/reload", json=payload, timeout=3000,
+                      headers={'Content-Type': 'application/json'})
+        pass
 
     def train(self, labels):
         for label in labels:
@@ -45,17 +63,18 @@ class LearningManager:
             extractor.train()
             extractor.save()
 
-    def _train_online_extractor(self, document_collection):
-        # TODO: actually train extractors and call reload API path
-        # see train_routine.py
-        pass
-
-    def train_online_collection(self, document_collection):
+    def train_online(self, document_collection, label):
         # TODO: more than one label?
-        label = document_collection[0]["annotations"]["annotation_label"]
-        for extractor, extractor_label in self._extractor_registry:
-            if extractor_label == label:
-                self._annotation_storage.setdefault(extractor_label, []).append(document_collection)
-                if self.is_storage_full(extractor_label):
-                    with ProcessPoolExecutor(mp_context=ctx) as executor:
-                        executor.submit(self._train_online_extractor(), self.process_mini_batch(extractor_label))
+        extractor = self._extractor_registry[label]
+        if extractor:
+            self._annotated_collection_storage.setdefault(label, []).append(document_collection)
+            print(f"received annotation for {label}. now at {len(self._annotated_collection_storage[label])}/{self.storage_size} entries")
+            if self.is_storage_full(label):
+                print("starting concurrent training now!")
+                with ProcessPoolExecutor(mp_context=ctx) as executor:
+                    executor.submit(self.storage_train,
+                                    self.process_mini_batch(label),
+                                    extractor,
+                                    label)
+
+
