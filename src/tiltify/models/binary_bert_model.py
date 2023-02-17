@@ -43,7 +43,6 @@ class BinaryBERTModel(ExtractionModel):
                 loss.backward()
                 optimizer.step()
                 lr_scheduler.step()
-                break
 
     def predict(self, document: Document):
         document_loader = self.preprocessor.preprocess_document(document)

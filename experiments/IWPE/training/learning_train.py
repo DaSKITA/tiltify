@@ -12,6 +12,7 @@ from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.extractors.k_ranker import KRanker
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from datetime import datetime
 
 
 def get_documents(document_collection, train_doc_size):
@@ -46,6 +47,7 @@ def eval_model(model, doc_set, k_ranks):
             found_doc.append(found_blob)
             real_doc.append(real_blob)
         metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)["True"]
+    metrics_dict["classify_metrics"] = []
     metrics_dict["all_logits"] = all_logits
     metrics_dict["all_labels"] = all_labels
     all_labels = sum(all_labels, [])
@@ -78,14 +80,15 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 
 
 model_types = [
-    # TestModel,
-    # SentenceBert,
+    TestModel,
     BinaryBERTModel,
+    SentenceBert,
     GaussianNBModel
     ]
 
 for model_type in model_types:
     print(f"#### Conducting experment for {model_type.__name__}... ####")
+    start_time = datetime.now()
     model_cls = model_type
     model_kwargs = dict(
         label=config["label"]
@@ -98,7 +101,7 @@ for model_type in model_types:
     for k in range(config["repitions"]):
         result_dict = defaultdict(list)
         for train_doc_size in train_doc_sizes:
-            # try:
+            try:
                 save_dir = os.path.join(exp_dir, f"{train_doc_size}/{k}")
                 pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
 
@@ -119,10 +122,12 @@ for model_type in model_types:
 
                 with open(result_dir, "w") as f:
                     json.dump(results, f)
-            # except RuntimeError:
-            #     print(f"{model_type} for {train_doc_size} could not be trained. Skipping...")
-
+            except RuntimeError:
+                print(f"{model_type} for {train_doc_size} could not be trained. Skipping...")
+    diff = datetime.now() - start_time
+    config["duration"] = diff.total_seconds()
     with open(os.path.join(exp_dir, "config.json"), "w") as f:
         json.dump(config, f)
+    print(f"### Experiment for {model_type.__name__} ended after {diff.total_seconds()} seconds. ###")
 
 print("Done!")
