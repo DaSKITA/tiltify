@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import List, Union
 
 from tiltify.data_structures.blob import Blob

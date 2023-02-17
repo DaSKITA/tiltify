@@ -2,12 +2,10 @@ from abc import ABC, abstractmethod
 import os
 import pathlib
 from typing import Union
-import torch
 
 from tiltify.data_structures.document import Document
 from tiltify.config import Path
 from tiltify.data_structures.document_collection import DocumentCollection
-
 from tiltify.models.binary_bert_model import BinaryBERTModel
 from tiltify.models.gaussian_nb_model import GaussianNBModel
 from tiltify.models.sentence_bert import SentenceBert
@@ -214,4 +212,4 @@ if __name__ == "__main__":
     from tiltify.config import EXTRACTOR_CONFIG
     extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
     extractor_manager.train(labels=["Right to Information"])
-    #extractor_manager.train_all()
+    # extractor_manager.train_all()
