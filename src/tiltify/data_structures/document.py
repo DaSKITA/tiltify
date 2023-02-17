@@ -5,10 +5,9 @@ from tiltify.data_structures.blob import Blob
 from tiltify.data_structures.annotation import PredictedAnnotation
 
 
-
 class Document:
 
-    def __init__(self, title: str, blobs: List[Blob] = None) -> None:
+    def __init__(self, title: str, blobs: List[Blob] = None, language: str = None) -> None:
         """
         A Document is a list of blobs and represents a real document. In this case a privacy policy.
         It bears a title as well.
@@ -18,6 +17,7 @@ class Document:
             blobs (Blob): [description]
         """
         self.title = title
+        self.language = language
         if blobs:
             self.blobs = blobs
         else:

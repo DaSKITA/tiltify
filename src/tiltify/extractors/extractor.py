@@ -177,11 +177,10 @@ class Extractor(ExtractorInterface):
         self.k_ranker = KRanker(k_ranks)
 
     def train(self):
-        document_collection = DocumentCollection.from_json_files()
+        document_collection = DocumentCollection.from_json_files(language="de")
         # bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
         # train, val, test = bert_splitter.split(document_collection)
         self.extraction_model = self.extraction_model_cls(label=self.extractor_label)
-        if torch.cuda.is_available() and self.extraction_model
         self.extraction_model.train(document_collection=document_collection)
         # experiment = Experiment(
         #     experiment_path=self.model_path, folder_name=self.__class__.__name__)
@@ -214,5 +213,5 @@ class Extractor(ExtractorInterface):
 if __name__ == "__main__":
     from tiltify.config import EXTRACTOR_CONFIG
     extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
-    #extractor_manager.train(labels=["Right to Complain"])
-    extractor_manager.train_all()
+    extractor_manager.train(labels=["Right to Information"])
+    #extractor_manager.train_all()
