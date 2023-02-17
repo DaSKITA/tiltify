@@ -80,7 +80,7 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 model_types = [
     # TestModel,
     # SentenceBert,
-    # BinaryBERTModel,
+    BinaryBERTModel,
     GaussianNBModel
     ]
 

@@ -4,6 +4,7 @@ import pandas as pd
 def create_learning_df(results, type_of_results="classify_metrics"):
     plot_dfs = []
     for result_dict in results.values():
+        # TODO: if case as for k only positive results are given
         train_f1_scores = [train_dict[type_of_results]["macro avg"]["f1-score"] for train_dict in result_dict["train_results"]]
         test_f1_scores = [train_dict[type_of_results]["macro avg"]["f1-score"] for train_dict in result_dict["test_results"]]
         train_size = result_dict["train_size"]
