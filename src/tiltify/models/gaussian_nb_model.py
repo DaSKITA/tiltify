@@ -46,7 +46,7 @@ class GaussianNBModel(ExtractionModel):
         logits = self.model.predict_proba(preprocessed_document)
         idx = self.classes.get(self.label, None)
         label_logits = logits[:, idx]
-        return label_logits
+        return label_logits.tolist()
 
     @classmethod
     def load(cls, load_path, label):

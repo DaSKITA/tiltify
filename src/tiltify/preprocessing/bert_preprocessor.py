@@ -39,7 +39,7 @@ class TiltDataset(Dataset):
         sentence at index idx
     """
 
-    def __init__(self, blobs: Dict, labels: List):
+    def __init__(self, blobs: Dict, labels: List = None):
         """
         Parameters
         ----------
@@ -50,7 +50,8 @@ class TiltDataset(Dataset):
         self.input_ids = blobs["input_ids"]
         self.attention_mask = blobs["attention_mask"]
         self.token_type_ids = blobs["token_type_ids"]
-        self.labels = torch.Tensor(labels)
+        if labels:
+            self.labels = torch.Tensor(labels)
 
     def __len__(self) -> int:
         """returns the length of the dataset"""
@@ -123,7 +124,8 @@ class BERTPreprocessor(Preprocessor):
         preprocessed_document = self._tokenize_blobs([blob.text for blob in document.blobs])
         document_labels = self.label_retriever.retrieve_labels(document.blobs)
         document_labels = self.prepare_labels(document_labels)
-        return preprocessed_document, document_labels
+        dataset = TiltDataset(preprocessed_document, document_labels)
+        return self._create_dataloader(dataset)
 
     def prepare_labels(self, labels: List):
         """Binarize Labels if necessray.

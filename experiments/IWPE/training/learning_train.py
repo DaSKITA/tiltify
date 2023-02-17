@@ -30,7 +30,7 @@ def eval_model(model, doc_set, k_ranks):
         labels = model.preprocessor.label_retriever.retrieve_labels(document.blobs)
         labels = model.preprocessor.prepare_labels(labels)
         logits = model.predict(document)
-        #log_based_preds = [logit > 0.5 for logit in logits]
+        # log_based_preds = [logit > 0.5 for logit in logits]
         all_logits.append(logits)
         all_labels.append(labels)
 
@@ -45,11 +45,13 @@ def eval_model(model, doc_set, k_ranks):
             real_blob = sum(doc_labels) > 0
             found_doc.append(found_blob)
             real_doc.append(real_blob)
-        metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)
+        metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)["True"]
+    metrics_dict["all_logits"] = all_logits
+    metrics_dict["all_labels"] = all_labels
     all_labels = sum(all_labels, [])
     all_logits = sum(all_logits, [])
-    all_logits = [1 if logit > 0.5 else 0 for logit in all_logits]
-    metrics_dict["classify_metrics"] = classification_report(all_labels, all_logits, output_dict=True, digits=2, zero_division=0)
+    all_preds = [1 if logit > 0.5 else 0 for logit in all_logits]
+    metrics_dict["classify_metrics"] = classification_report(all_labels, all_preds, output_dict=True, digits=2, zero_division=0)
     return metrics_dict
 
 
@@ -76,9 +78,9 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 
 
 model_types = [
-    TestModel,
-    SentenceBert,
-    BinaryBERTModel,
+    # TestModel,
+    # SentenceBert,
+    # BinaryBERTModel,
     GaussianNBModel
     ]
 
@@ -96,16 +98,16 @@ for model_type in model_types:
     for k in range(config["repitions"]):
         result_dict = defaultdict(list)
         for train_doc_size in train_doc_sizes:
-            try:
+            # try:
                 save_dir = os.path.join(exp_dir, f"{train_doc_size}/{k}")
                 pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
 
                 train_set = get_documents(train_docs, train_doc_size)
                 print(f"Starting training of {model_cls.__name__}...")
                 model.train(train_set)
+                model.save(save_dir)
                 train_report = eval_model(model, train_set, config["k_ranks"])
                 test_report = eval_model(model, test_set, config["k_ranks"])
-                model.save(save_dir)
 
                 # TODO: add more metrics and maybe also logits
                 result_dict["train_size"].append(train_doc_size)
@@ -117,8 +119,8 @@ for model_type in model_types:
 
                 with open(result_dir, "w") as f:
                     json.dump(results, f)
-            except RuntimeError:
-                print(f"{model_type} for {train_doc_size} could not be trained. Skipping...")
+            # except RuntimeError:
+            #     print(f"{model_type} for {train_doc_size} could not be trained. Skipping...")
 
     with open(os.path.join(exp_dir, "config.json"), "w") as f:
         json.dump(config, f)
