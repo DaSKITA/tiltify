@@ -57,6 +57,7 @@ class DocumentCollection:
         try:
             document = self.documents[self.index]
         except IndexError:
+            self.index = 0
             raise StopIteration()
         self.index += 1
         return document
