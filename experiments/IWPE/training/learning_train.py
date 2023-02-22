@@ -49,10 +49,10 @@ def eval_model(model, doc_set, k_ranks):
         metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)
     print(f"!!!!!!!!!! Found: {sum(found_doc)}, Real: {sum(real_doc)}")
     metrics_dict["classify_metrics"] = []
-    #metrics_dict["all_logits"] = all_logits
-    #metrics_dict["all_labels"] = all_labels
-    all_labels = sum(all_labels, [])
-    all_logits = sum(all_logits, [])
+    metrics_dict["all_logits"] = all_logits
+    metrics_dict["all_labels"] = all_labels
+    # all_labels = sum(all_labels, [])
+    # all_logits = sum(all_logits, [])
     all_preds = [1 if logit > 0.5 else 0 for logit in all_logits]
     metrics_dict["classify_metrics"] = classification_report(all_labels, all_preds, output_dict=True, digits=2, zero_division=0)
     return metrics_dict
@@ -74,14 +74,14 @@ document_collection = DocumentCollection.from_json_files()
 doc_index = list(range(len(document_collection)))
 
 train_docs, test_docs = train_test_split(
-    doc_index, test_size=0.33, random_state=config["random_state"], shuffle=False)
+    doc_index, test_size=0.33, random_state=config["random_state"], shuffle=True
 train_docs = document_collection[train_docs]
 test_set = document_collection[test_docs]
 print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Docs.")
 
 
 model_types = [
-    #TestModel,
+    # TestModel,
     BinaryBERTModel,
     SentenceBert,
     GaussianNBModel
