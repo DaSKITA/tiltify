@@ -30,7 +30,7 @@ class GaussianNBModel(ExtractionModel):
         self.classes = {None: 0}
         self.classes.update({name: idx+1 for idx, name in enumerate(classes)})
         self.preprocessor = W2VPreprocessor(en=en, binary=self.binary, remove_stopwords=remove_stopwords,
-                                            weighted_sampling=weighted_sampling)
+                                            weighted_sampling=weighted_sampling, label=label)
 
     def train(self, document_collection: DocumentCollection):
         data_loader = self.preprocessor.preprocess(document_collection)
