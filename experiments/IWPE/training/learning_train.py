@@ -46,10 +46,11 @@ def eval_model(model, doc_set, k_ranks):
             real_blob = sum(doc_labels) > 0
             found_doc.append(found_blob)
             real_doc.append(real_blob)
-        metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)["True"]
+        metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)
+    print(f"!!!!!!!!!! Found: {sum(found_doc)}, Real: {sum(real_doc)}")
     metrics_dict["classify_metrics"] = []
-    metrics_dict["all_logits"] = all_logits
-    metrics_dict["all_labels"] = all_labels
+    #metrics_dict["all_logits"] = all_logits
+    #metrics_dict["all_labels"] = all_labels
     all_labels = sum(all_labels, [])
     all_logits = sum(all_logits, [])
     all_preds = [1 if logit > 0.5 else 0 for logit in all_logits]
@@ -66,7 +67,7 @@ config = {
 }
 
 step_size = config["step_size"]
-train_doc_sizes = [size/10 for size in list(range(0, 10+step_size, step_size))][1:]
+train_doc_sizes = [1]  # [size/10 for size in list(range(0, 10+step_size, step_size))][1:]
 print(f"Training Sizes: {train_doc_sizes}")
 
 document_collection = DocumentCollection.from_json_files()
@@ -80,7 +81,7 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 
 
 model_types = [
-    TestModel,
+    #TestModel,
     BinaryBERTModel,
     SentenceBert,
     GaussianNBModel
@@ -109,12 +110,12 @@ for model_type in model_types:
                 print(f"Starting training of {model_cls.__name__}...")
                 model.train(train_set)
                 model.save(save_dir)
-                train_report = eval_model(model, train_set, config["k_ranks"])
+                # train_report = eval_model(model, train_set, config["k_ranks"])
                 test_report = eval_model(model, test_set, config["k_ranks"])
 
                 # TODO: add more metrics and maybe also logits
                 result_dict["train_size"].append(train_doc_size)
-                result_dict["train_results"].append(train_report)
+                #result_dict["train_results"].append(train_report)
                 result_dict["test_results"].append(test_report)
                 results[k] = result_dict
 
