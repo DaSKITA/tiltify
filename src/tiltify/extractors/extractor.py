@@ -170,16 +170,16 @@ class Extractor(ExtractorInterface):
         self.extractor_label = extractor_label
         if not model_path:
             model_path = os.path.join(
-                Path.root_path, f"src/tiltify/model_files/{self.__class__.__name__}")
-        self.model_path = os.path.join(model_path, f"{self.extractor_label}")
+                Path.root_path, "src/tiltify/model_files/")
+        self.model_path = os.path.join(model_path + f"{self.__class__.__name__}", f"{self.extractor_label}")
         self.extraction_model_cls = extraction_model_cls
+        self.extraction_model = self.extraction_model_cls(label=self.extractor_label)
         self.k_ranker = KRanker(k_ranks)
 
     def train(self):
         document_collection = DocumentCollection.from_json_files()
         # bert_splitter = DocumentCollectionSplitter(val=val, split_ratio=split_ratio)
         # train, val, test = bert_splitter.split(document_collection)
-        self.extraction_model = self.extraction_model_cls(label=self.extractor_label)
         self.extraction_model.train(document_collection=document_collection)
         # experiment = Experiment(
         #     experiment_path=self.model_path, folder_name=self.__class__.__name__)
