@@ -80,9 +80,9 @@ print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Do
 
 
 model_types = [
-    #TestModel
+    TestModel
     #BinaryBERTModel,
-    SentenceBert,
+    #SentenceBert,
     #GaussianNBModel
     ]
 
@@ -100,9 +100,9 @@ for model_type in model_types:
     exp_dir = os.path.join(Path.root_path, f"experiments/IWPE/training/{model_cls.__name__}")
     results = defaultdict(dict)
     for k in range(config["repitions"]):
-        result_dict = defaultdict(list)
         for right_to in right_tos:
             try:
+                result_dict = {}
                 save_dir = os.path.join(exp_dir, f"{right_to}/{k}")
                 pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
                 model = model_cls(label=right_to)
@@ -114,11 +114,11 @@ for model_type in model_types:
                 test_report = eval_model(model, test_set, config["k_ranks"])
 
                 # TODO: add more metrics and maybe also logits
-                result_dict["train_results"].append(train_report)
-                result_dict["test_results"].append(test_report)
+                result_dict["train_results"] = train_report
+                result_dict["test_results"] = test_report
                 results[right_to][k] = result_dict
 
-                result_dir = os.path.join(exp_dir, "results.json")
+                result_dir = os.path.join(exp_dir, "right_to_results.json")
 
                 with open(result_dir, "w") as f:
                     json.dump(results, f)
