@@ -13,6 +13,7 @@ from tiltify.extractors.k_ranker import KRanker
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from datetime import datetime
+from sklearn.metrics import brier_score_loss
 
 
 def get_documents(document_collection, train_doc_size):
@@ -55,6 +56,7 @@ def eval_model(model, doc_set, k_ranks):
     all_logits = sum(all_logits, [])
     all_preds = [1 if logit > 0.5 else 0 for logit in all_logits]
     metrics_dict["classify_metrics"] = classification_report(all_labels, all_preds, output_dict=True, digits=2, zero_division=0)
+    metrics_dict["brier_loss"] = brier_score_loss(all_labels, all_logits)
     return metrics_dict
 
 
