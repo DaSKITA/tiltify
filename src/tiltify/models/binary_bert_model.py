@@ -22,6 +22,7 @@ class BinaryBERTModel(ExtractionModel):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.preprocessor = BERTPreprocessor(
             bert_model=BASE_BERT_MODEL, binary=True, batch_size=batch_size, label=label)
+        self.sigmoid = torch.nn.Sigmoid()
 
     def train(self, document_collection: DocumentCollection):
         data_loader = self.preprocessor.preprocess(document_collection)
@@ -52,7 +53,8 @@ class BinaryBERTModel(ExtractionModel):
             preprocessed_document = {k: v.to(self.device) for k, v in batch.items()}
             with torch.no_grad():
                 output = self.model(**preprocessed_document)
-            logits.append(output.logits)
+            estimates = self.sigmoid(output.logits)
+            logits.append(estimates)
         logits = torch.cat(logits, dim=0)
         logits = logits.detach().cpu().tolist()
         logits = sum(logits, [])
@@ -64,6 +66,7 @@ class BinaryBERTModel(ExtractionModel):
         model.eval()
         init_obj = cls(label=label)
         init_obj.model = model
+        init_obj.model.to(init_obj.device)
         return init_obj
 
     def save(self, save_path):
