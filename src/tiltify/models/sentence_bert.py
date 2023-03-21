@@ -38,7 +38,7 @@ class SentenceBert(ExtractionModel):
     def predict(self, document: Document) -> list[float]:
         blob_texts = [blob.text for blob in document.blobs]
         encoded_corpus = self.model.encode(blob_texts, convert_to_tensor=True)
-        cos_scores = util.cos_sim(self.encoded_query, encoded_corpus)[0]
+        cos_scores = util.cos_sim(self.encoded_query, encoded_corpus)[0]  # TODO: replace with triplet loss
         return cos_scores.detach().cpu().tolist()
 
     @classmethod
@@ -47,7 +47,7 @@ class SentenceBert(ExtractionModel):
         model = SentenceTransformer.load(load_path)
         init_obj = cls(label)
         init_obj.model = model
-        init_obj.encoded_query = model.encode(init_obj.preprocessor.query)
+        init_obj.encoded_query = model.encode(init_obj.preprocessor.query, convert_to_tensor=True)
         return init_obj
 
     def save(self, save_path):
