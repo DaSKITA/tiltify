@@ -21,7 +21,7 @@ class DocumentCollection:
         self.index = 0
 
     @classmethod
-    def from_json_files(cls, folder_name: str = "annotated_policies"):
+    def from_json_files(cls, folder_name: str = "annotated_policies", language: str = "de"):
         """Creates a Document Collection from Json Policy files.
 
         Args:
@@ -31,7 +31,7 @@ class DocumentCollection:
             _type_: _description_
         """
         # Annotations are not parsed
-        json_policies = cls.data_loader.get_json_policies(folder_name)
+        json_policies = cls.data_loader.get_json_policies(folder_name, language)
         document_list = [
             cls.json_parser.parse(**json_policy["document"], annotations=json_policy["annotations"])
             for json_policy in json_policies]
@@ -53,14 +53,11 @@ class DocumentCollection:
             for json_policy in json_policies]
         return cls(document_list)
 
-    @classmethod
-    def from_pickle_files(self):
-        pass
-
     def __next__(self) -> Document:
         try:
             document = self.documents[self.index]
         except IndexError:
+            self.index = 0
             raise StopIteration()
         self.index += 1
         return document

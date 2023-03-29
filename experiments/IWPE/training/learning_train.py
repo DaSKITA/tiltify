@@ -12,6 +12,7 @@ from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.extractors.k_ranker import KRanker
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from datetime import datetime
 
 
 def get_documents(document_collection, train_doc_size):
@@ -23,29 +24,37 @@ def get_documents(document_collection, train_doc_size):
 def eval_model(model, doc_set, k_ranks):
     print(f"Starting evaluation of {model.__class__.__name__}...")
     metrics_dict = {}
-    found_doc = []
-    real_doc = []
-    all_log_preds = []
+
+    all_logits = []
     all_labels = []
     for document in tqdm(doc_set):
         labels = model.preprocessor.label_retriever.retrieve_labels(document.blobs)
         labels = model.preprocessor.prepare_labels(labels)
         logits = model.predict(document)
-        log_based_preds = [logit > 0.5 for logit in logits]
-        all_log_preds.append(log_based_preds)
+        # log_based_preds = [logit > 0.5 for logit in logits]
+        all_logits.append(logits)
         all_labels.append(labels)
 
     for k_rank in k_ranks:
-        ranker = KRanker(k_rank)
-        k_rank_found = []
-        k_rank_real = []
-        for idx, doc_logs in enumerate(all_log_preds):
+        found_doc = []
+        real_doc = []
+        for idx, logits in enumerate(all_logits):
             doc_labels = all_labels[idx]
-            doc_indexes, _ = ranker.form_k_ranks(doc_logs)
-            k_rank_found.append(sum([doc_labels[index] > 0 for index in doc_indexes]) > 0)
-            k_rank_real.append(sum(doc_labels) > 0)
-        metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(k_rank_real, k_rank_found, output_dict=True, digits=2, zero_division=0)
-    metrics_dict["classify_metrics"] = classification_report(labels, log_based_preds, output_dict=True, digits=2, zero_division=0)
+            ranker = KRanker(k_rank)
+            doc_indexes, _ = ranker.form_k_ranks(logits)
+            found_blob = sum([doc_labels[index] > 0 for index in doc_indexes]) > 0
+            real_blob = sum(doc_labels) > 0
+            found_doc.append(found_blob)
+            real_doc.append(real_blob)
+        metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)
+    print(f"!!!!!!!!!! Found: {sum(found_doc)}, Real: {sum(real_doc)}")
+    metrics_dict["classify_metrics"] = []
+    metrics_dict["all_logits"] = all_logits
+    metrics_dict["all_labels"] = all_labels
+    # all_labels = sum(all_labels, [])
+    # all_logits = sum(all_logits, [])
+    all_preds = [1 if logit > 0.5 else 0 for logit in all_logits]
+    metrics_dict["classify_metrics"] = classification_report(all_labels, all_preds, output_dict=True, digits=2, zero_division=0)
     return metrics_dict
 
 
@@ -58,28 +67,29 @@ config = {
 }
 
 step_size = config["step_size"]
-train_doc_sizes = [size/10 for size in list(range(0, 10+step_size, step_size))][1:]
+train_doc_sizes = [1]  # [size/10 for size in list(range(0, 10+step_size, step_size))][1:]
 print(f"Training Sizes: {train_doc_sizes}")
 
 document_collection = DocumentCollection.from_json_files()
 doc_index = list(range(len(document_collection)))
 
 train_docs, test_docs = train_test_split(
-    doc_index, test_size=0.33, random_state=config["random_state"], shuffle=False)
+    doc_index, test_size=0.33, random_state=config["random_state"], shuffle=True
 train_docs = document_collection[train_docs]
 test_set = document_collection[test_docs]
 print(f"Corpus having: {len(test_docs)} Test Docs and {len(train_docs)} Train Docs.")
 
 
 model_types = [
-    TestModel,
-    # SentenceBert,
-    # BinaryBERTModel,
-    # GaussianNBModel
+    # TestModel,
+    BinaryBERTModel,
+    SentenceBert,
+    GaussianNBModel
     ]
 
 for model_type in model_types:
     print(f"#### Conducting experment for {model_type.__name__}... ####")
+    start_time = datetime.now()
     model_cls = model_type
     model_kwargs = dict(
         label=config["label"]
@@ -99,13 +109,13 @@ for model_type in model_types:
                 train_set = get_documents(train_docs, train_doc_size)
                 print(f"Starting training of {model_cls.__name__}...")
                 model.train(train_set)
-                train_report = eval_model(model, train_set, config["k_ranks"])
-                test_report = eval_model(model, test_set, config["k_ranks"])
                 model.save(save_dir)
+                # train_report = eval_model(model, train_set, config["k_ranks"])
+                test_report = eval_model(model, test_set, config["k_ranks"])
 
                 # TODO: add more metrics and maybe also logits
                 result_dict["train_size"].append(train_doc_size)
-                result_dict["train_results"].append(train_report)
+                #result_dict["train_results"].append(train_report)
                 result_dict["test_results"].append(test_report)
                 results[k] = result_dict
 
@@ -115,8 +125,10 @@ for model_type in model_types:
                     json.dump(results, f)
             except RuntimeError:
                 print(f"{model_type} for {train_doc_size} could not be trained. Skipping...")
-
+    diff = datetime.now() - start_time
+    config["duration"] = diff.total_seconds()
     with open(os.path.join(exp_dir, "config.json"), "w") as f:
         json.dump(config, f)
+    print(f"### Experiment for {model_type.__name__} ended after {diff.total_seconds()} seconds. ###")
 
 print("Done!")

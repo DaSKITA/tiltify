@@ -30,7 +30,7 @@ class GaussianNBModel(ExtractionModel):
         self.classes = {None: 0}
         self.classes.update({name: idx+1 for idx, name in enumerate(classes)})
         self.preprocessor = W2VPreprocessor(en=en, binary=self.binary, remove_stopwords=remove_stopwords,
-                                            weighted_sampling=weighted_sampling)
+                                            weighted_sampling=weighted_sampling, label=label)
 
     def train(self, document_collection: DocumentCollection):
         data_loader = self.preprocessor.preprocess(document_collection)
@@ -46,7 +46,7 @@ class GaussianNBModel(ExtractionModel):
         logits = self.model.predict_proba(preprocessed_document)
         idx = self.classes.get(self.label, None)
         label_logits = logits[:, idx]
-        return label_logits
+        return label_logits.tolist()
 
     @classmethod
     def load(cls, load_path, label):

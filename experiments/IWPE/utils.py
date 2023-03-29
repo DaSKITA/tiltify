@@ -4,13 +4,25 @@ import pandas as pd
 def create_learning_df(results, type_of_results="classify_metrics"):
     plot_dfs = []
     for result_dict in results.values():
-        train_f1_scores = [train_dict[type_of_results]["macro avg"]["f1-score"] for train_dict in result_dict["train_results"]]
-        test_f1_scores = [train_dict[type_of_results]["macro avg"]["f1-score"] for train_dict in result_dict["test_results"]]
+        if type_of_results != "classify_metrics":
+            try:
+                train_f1_scores = [train_dict[type_of_results]["True"]["f1-score"] for train_dict in result_dict["train_results"]]
+                test_f1_scores = [train_dict[type_of_results]["True"]["f1-score"] for train_dict in result_dict["test_results"]]
+                support = [train_dict[type_of_results]["True"]["support"] for train_dict in result_dict["test_results"]]
+            except KeyError:
+                train_f1_scores = [train_dict[type_of_results]["f1-score"] for train_dict in result_dict["train_results"]]
+                test_f1_scores = [train_dict[type_of_results]["f1-score"] for train_dict in result_dict["test_results"]]
+                support = [train_dict[type_of_results]["support"] for train_dict in result_dict["test_results"]]
+        else:
+            train_f1_scores = [train_dict[type_of_results]["macro avg"]["f1-score"] for train_dict in result_dict["train_results"]]
+            test_f1_scores = [train_dict[type_of_results]["macro avg"]["f1-score"] for train_dict in result_dict["test_results"]]
+            support = [train_dict[type_of_results]["macro avg"]["support"] for train_dict in result_dict["test_results"]]
         train_size = result_dict["train_size"]
         plot_df = {
             "train_f1_scores": train_f1_scores,
             "test_f1_scores": test_f1_scores,
-            "train_size": train_size
+            "train_size": train_size,
+            "support": support
         }
         plot_df = pd.DataFrame(plot_df)
         plot_dfs.append(plot_df)
