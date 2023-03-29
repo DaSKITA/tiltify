@@ -1,0 +1,62 @@
+{
+    "SentenceBert__Right to Complain__brier_score": [
+        0.01378530904549949,
+        0.013292351363569769
+    ],
+    "SentenceBert__Right to Information__brier_score": [
+        0.031500463644331955,
+        0.025669636412280362
+    ],
+    "SentenceBert__Right to Deletion__brier_score": [
+        0.044428446700344404,
+        0.05800302405102311
+    ],
+    "SentenceBert__Right to Data Portability__brier_score": [
+        0.026190142670298844,
+        0.034501505374927265
+    ],
+    "SentenceBert__Right to Withdraw Consent__brier_score": [
+        0.04343621321993973,
+        0.036315815829273
+    ],
+    "BinaryBERTModel__Right to Complain__brier_score": [
+        0.24160079545150498,
+        0.27421352170646607
+    ],
+    "BinaryBERTModel__Right to Information__brier_score": [
+        0.25198360074217335,
+        0.24661800014424523
+    ],
+    "BinaryBERTModel__Right to Deletion__brier_score": [
+        0.2490153955274818,
+        0.25527094542465784
+    ],
+    "BinaryBERTModel__Right to Data Portability__brier_score": [
+        0.24337107018305873,
+        0.2361549767113216
+    ],
+    "BinaryBERTModel__Right to Withdraw Consent__brier_score": [
+        0.23864612473265115,
+        0.2619586042284789
+    ],
+    "GaussianNBModel__Right to Complain__brier_score": [
+        0.48315181678270513,
+        0.482556751953768
+    ],
+    "GaussianNBModel__Right to Information__brier_score": [
+        0.5105997408534855,
+        0.5106023237351139
+    ],
+    "GaussianNBModel__Right to Deletion__brier_score": [
+        0.48112517384372244,
+        0.4812629560870932
+    ],
+    "GaussianNBModel__Right to Data Portability__brier_score": [
+        0.45542719540740834,
+        0.455252023859223
+    ],
+    "GaussianNBModel__Right to Withdraw Consent__brier_score": [
+        0.5303506783141956,
+        0.5305852879258212
+    ]
+}

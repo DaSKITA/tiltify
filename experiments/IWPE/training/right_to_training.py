@@ -50,12 +50,14 @@ def eval_model(model, doc_set, k_ranks):
         metrics_dict[f"{k_rank}_k_rank_metrics"] = classification_report(real_doc, found_doc, output_dict=True, digits=2, zero_division=0)
     print(f"!!!!!!!!!! Found: {sum(found_doc)}, Real: {sum(real_doc)}")
     metrics_dict["classify_metrics"] = []
-    #metrics_dict["all_logits"] = all_logits
-    #metrics_dict["all_labels"] = all_labels
+    # metrics_dict["all_logits"] = all_logits
+    # metrics_dict["all_labels"] = all_labels
     all_labels = sum(all_labels, [])
     all_logits = sum(all_logits, [])
     all_preds = [1 if logit > 0.5 else 0 for logit in all_logits]
     metrics_dict["classify_metrics"] = classification_report(all_labels, all_preds, output_dict=True, digits=2, zero_division=0)
+    if isinstance(model, SentenceBert):
+        all_labels = [-1 if i == 0 else i for i in all_labels]
     metrics_dict["brier_loss"] = brier_score_loss(all_labels, all_logits)
     return metrics_dict
 
@@ -100,7 +102,13 @@ for model_type in model_types:
     start_time = datetime.now()
     model_cls = model_type
     exp_dir = os.path.join(Path.root_path, f"experiments/IWPE/training/{model_cls.__name__}")
-    results = defaultdict(dict)
+    result_dir = os.path.join(exp_dir, "right_to_results_2.json")
+    if os.path.isfile(result_dir):
+        with open(result_dir, "r") as f:
+            results = json.load(f)
+        print(f"Loaded existing results in {result_dir}")
+    else:
+        results = defaultdict(dict)
     for k in range(config["repitions"]):
         for right_to in right_tos:
             try:
@@ -119,8 +127,6 @@ for model_type in model_types:
                 result_dict["train_results"] = train_report
                 result_dict["test_results"] = test_report
                 results[right_to][k] = result_dict
-
-                result_dir = os.path.join(exp_dir, "right_to_results.json")
 
                 with open(result_dir, "w") as f:
                     json.dump(results, f)
