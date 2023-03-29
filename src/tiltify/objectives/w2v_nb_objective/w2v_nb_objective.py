@@ -6,7 +6,7 @@ from rapidflow.metrics_handler import MetricsHandler
 from rapidflow.objective import Objective
 from sklearn.naive_bayes import GaussianNB
 
-from tiltify.objectives.w2v_nb_objective.w2v_nb_preprocessor import W2VDataset
+from tiltify.preprocessing.w2v_nb_preprocessor import W2VDataset
 
 
 class W2VBinaryObjective(Objective):

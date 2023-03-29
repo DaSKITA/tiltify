@@ -2,8 +2,7 @@ from dataclasses import dataclass
 from typing import List, Union
 
 from tiltify.data_structures.blob import Blob
-from tiltify.data_structures.annotation import PredictedAnnotation
-
+from tiltify.data_structures.annotation import Annotation, PredictedAnnotation
 
 
 class Document:
@@ -40,3 +39,10 @@ class Document:
             return predicted_annotation
         else:
             return None
+
+    def copy_annotations(self, source):
+        # TODO: maybe introduce start and end to blob in order to reduce complexity?
+        for blob in self.blobs:
+            for src_blob in source.blobs:
+                if blob.text == src_blob.text:
+                    blob.add_annotation(src_blob.annotations)

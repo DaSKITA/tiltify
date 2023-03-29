@@ -2,17 +2,18 @@ from flask import Blueprint, Flask, request
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_restx import Api, fields, Resource
 
-from tiltify.config import FlaskConfig, EXTRACTOR_CONFIG
+from tiltify.config import EXTRACTOR_CONFIG, FlaskConfig, INTERNAL_KEY, TILTIFY_ADD, TILTIFY_PORT
 from tiltify.data_structures.document_collection import DocumentCollection
 from tiltify.extractors.extractor import ExtractorManager
 from tiltify.parsers.policy_parser import PolicyParser
 
-
 # Initialize Flask App
+app = Flask(__name__)
+
+# initialize ExtractorManager, PolicyParser and load FlaskConfig
 extractor_manager = ExtractorManager(EXTRACTOR_CONFIG)
 extractor_manager.load_all()
 policy_parser = PolicyParser()
-app = Flask(__name__)
 app.config.from_object(FlaskConfig)
 
 # API namespace
@@ -29,7 +30,7 @@ api_bp = Blueprint("api", __name__, url_prefix="/api/")
 api = Api(api_bp, version='1.0', title='TILTify API', doc='/docs/',
           description='A simple API granting access to model training and Annotation predictions of TILTify',
           authorizations=authorizations, default='TILTify auth, train & predict',
-          default_label='Contains paths to authorization for or training and predicting with TILTify',)
+          default_label='Contains paths to authorization for or training and predicting with TILTify', )
 app.register_blueprint(api_bp)
 
 jwt = JWTManager(app)
@@ -47,7 +48,8 @@ document = api.model('Document', {
 annotation = api.model('Annotation', {
     'annotation_label': fields.String(required=True, description='Label to which this annotation belongs'),
     'annotation_text': fields.String(required=True, description='Text of annotation'),
-    'annotation_start': fields.Integer(required=True, description='Starting position of text annotation in the document text'),
+    'annotation_start': fields.Integer(required=True,
+                                       description='Starting position of text annotation in the document text'),
     'annotation_end': fields.Integer(required=True, description='Ending position of annotation in the document text')
 })
 
@@ -78,6 +80,10 @@ train_input = api.model('TrainInput', {
     'labels': fields.List(fields.String(description='Labels to which the documents to be trained belong'))
 })
 
+reload_instruction = api.model('ReloadInstruction', {
+    'extractor_label': fields.String(description='Label specifying Extractor to update', required=True)
+})
+
 
 # API authentication
 @api.route("/auth")
@@ -85,9 +91,9 @@ class Authentication(Resource):
 
     @api.expect(password)
     def post(self):
-        password = request.json.get("password", None)
+        key = request.json.get("password", None)
 
-        if password == FlaskConfig.JWT_SECRET_KEY:
+        if key == FlaskConfig.JWT_SECRET_KEY:
             access_token = create_access_token(identity="TILTer")
             return access_token, 200
         else:
@@ -98,22 +104,19 @@ class Authentication(Resource):
 @api.route('/train')
 class Train(Resource):
 
-    # Exchange with a CronJob and poll database directly
-
     @api.expect(train_input)
     @api.doc(security='apikey')
     @jwt_required()
     def post(self):
         # Websockets? : https://blog.miguelgrinberg.com/post/add-a-websocket-route-to-your-flask-2-x-application
-        """
-        :return: list of tasks.
-        """
         try:
             json_document_list = request.json.get('documents')
-            labels = request.json.get("labels")
+            # TODO: enable multi label training
+            label = request.json.get("labels")[0]
             document_collection = DocumentCollection.from_json_dict(json_document_list)
-            extractor_manager.train_online(labels, document_collection)
+            extractor_manager.train_online(document_collection, label)
         except Exception as e:
+            print(e)
             return f"Error: {e}", 500
         return "Training started", 202
 
@@ -127,18 +130,47 @@ class Predict(Resource):
     @jwt_required()
     def post(self):
         """
-        :return: list of tasks.
+        :return: list of predictions.
         """
         predict_input = request.json.get("document")
         labels = request.json.get("labels")
         document = policy_parser.parse(
             **predict_input["document"], annotations=predict_input["annotations"])
-        predictions = extractor_manager.predict(labels, document, predict_input["document"]["text"])
-        predictions = {"predictions": [prediction.to_dict() for prediction in predictions]}
+        # predictions = extractor_manager.predict(labels, document, predict_input["document"]["text"])
+        # predictions = {"predictions": [prediction.to_dict() for prediction in predictions if
+        #                               prediction.label is not None]}
+        predictions = {
+            "predictions": [{'text': 'Third party cookies,', 'label': 'Right to Deletion', 'start': 7113, 'end': 7133}]}
         return predictions, 200
+
+
+@api.route('/reload')
+class Reload(Resource):
+
+    @api.expect(reload_instruction)
+    def post(self):
+        if request.json.get("key") == INTERNAL_KEY:
+            print("received and starting reload now")
+            extractor_label = request.json.get("extractor_label")
+            extractor_manager.load(extractor_label)
+            return "Success!", 200
+        else:
+            return "Unauthorized", 401
+
+
+@app.route('/status')
+def status():
+    registry_data = extractor_manager.get_registry_data()
+    formatted_registry_data = [f"class name: {extractor.extraction_model.__class__.__name__},"
+                               f"path: {extractor.model_path},"
+                               f"label: {label}" for extractor, label in registry_data]
+    learning_manager_storage = extractor_manager.get_learning_manager_storage()
+    return f"Status\n" \
+           f"ExtractorManager Registry: {formatted_registry_data}\n" \
+           f"LearningManager Storage: {learning_manager_storage}\n"
 
 
 if __name__ == "__main__":
     app.run(
-        host="0.0.0.0", port="5001", use_debugger=False, use_reloader=False,
+        host=TILTIFY_ADD, port=TILTIFY_PORT, use_debugger=False, use_reloader=False,
         passthrough_errors=True)

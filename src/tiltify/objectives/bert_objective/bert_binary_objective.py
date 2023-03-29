@@ -4,7 +4,7 @@ from rapidflow.objective import Objective
 from tqdm import tqdm
 
 from tiltify.data_structures.document_collection import DocumentCollection
-from tiltify.objectives.bert_objective.binary_bert_model import BinaryBERTModel
+from tiltify.models.binary_bert_model import BinaryBERTModel
 from tiltify.preprocessing.label_retriever import LabelRetriever
 from tiltify.utils.match_metric_calculator import MatchMetricCalculator
 

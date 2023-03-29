@@ -1,8 +1,8 @@
 import os
 from sentence_transformers import SentenceTransformer, losses, util, InputExample
-import torch
 import itertools
 from torch.utils.data import DataLoader
+import torch
 
 from tiltify.extractors.extraction_model import ExtractionModel
 from tiltify.data_structures.document_collection import DocumentCollection
@@ -12,10 +12,9 @@ from tiltify.preprocessing.label_retriever import LabelRetriever
 
 class SentenceBert(ExtractionModel):
 
-    def __init__(self, label, num_train_epochs=5, k_ranks=5, en=False, batch_size=10, binary=True) -> None:
+    def __init__(self, label, num_train_epochs=5, en=False, batch_size=10, binary=True) -> None:
         self.label = label
         self.num_train_epochs = num_train_epochs
-        self.k_ranks = k_ranks
         self.batch_size = batch_size
         if en:
             self.pretrained_model = 'dbmdz/bert-base-english-cased'
@@ -23,24 +22,24 @@ class SentenceBert(ExtractionModel):
             self.pretrained_model = 'dbmdz/bert-base-german-cased'
         self.preprocessor = SentenceBertPreprocessor(self.label, binary)
         self.encoded_query = None
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
     def train(self, document_collection: DocumentCollection):
-        self.model = SentenceTransformer(self.pretrained_model)
+        self.model = SentenceTransformer(self.pretrained_model, device=self.device)
         triplet_corpus = self.preprocessor.preprocess(document_collection)
         triplet_corpus = DataLoader(
             triplet_corpus, shuffle=True, batch_size=self.batch_size,
             collate_fn=self.model.smart_batching_collate)
         train_loss = losses.TripletLoss(model=self.model, triplet_margin=5)
         self.model.fit(
-            train_objectives=[(triplet_corpus, train_loss)], epochs=self.num_train_epochs, warmup_steps=100)
-        self.encoded_query = self.model.encode(self.preprocessor.query)
+             train_objectives=[(triplet_corpus, train_loss)], epochs=self.num_train_epochs, warmup_steps=100)
+        self.encoded_query = self.model.encode(self.preprocessor.query, convert_to_tensor=True)
 
-    def predict(self, document: Document):
+    def predict(self, document: Document) -> list[float]:
         blob_texts = [blob.text for blob in document.blobs]
         encoded_corpus = self.model.encode(blob_texts, convert_to_tensor=True)
         cos_scores = util.cos_sim(self.encoded_query, encoded_corpus)[0]
-        logits, indices = torch.topk(cos_scores, k=self.k_ranks)
-        return indices.cpu().tolist()
+        return cos_scores.detach().cpu().tolist()
 
     @classmethod
     def load(cls, load_path, label):
@@ -55,10 +54,6 @@ class SentenceBert(ExtractionModel):
         save_path = os.path.join(save_path, "sbert")
         self.model.save(save_path)
 
-    def form_k_ranks(self, logits):
-        ranked_logits, indices = torch.sort(logits, descending=True, dim=0)
-        return ranked_logits[:self.k_ranks], indices[:self.k_ranks]
-
 
 class SentenceBertPreprocessor:
 
@@ -66,8 +61,10 @@ class SentenceBertPreprocessor:
         'Right to Information': "Das Bestehen eines Rechts auf Auskunft seitens des Verantwortlichen über die"
                                 "betreffenden personenbezogenen Daten.",
         'Right to Deletion': "Die betroffene Person hat das Recht, von dem Verantwortlichen unverzüglich die"
-                                "Berichtigung sie betreffender unrichtiger personenbezogener Daten zu verlangen."
-                                "Die betroffene Person hat das Recht, von dem Verantwortlichen zu verlangen, dass sie betreffende"
+                                "Berichtigung sie betreffender unrichtiger personenbezogener Daten zu"
+                                "verlangen."
+                                "Die betroffene Person hat das Recht, von dem Verantwortlichen zu verlangen, "
+                                "dass sie betreffende"
                                 "personenbezogene Daten unverzüglich gelöscht werden.",
         'Right to Data Portability': "Die betroffene Person hat das Recht, die sie betreffenden "
                                         "personenbezogenen Daten, die sie einem Verantwortlichen"
@@ -92,7 +89,7 @@ class SentenceBertPreprocessor:
 
     def preprocess_document(self, document: Document):
         labels = self.label_retriever.retrieve_labels(document.blobs)
-        labels = self._prepare_labels(labels)  # binarize labels
+        labels = self.prepare_labels(labels)  # binarize labels
         positive_data = []
         negative_data = []
         for blob, label in zip(document.blobs, labels):
@@ -107,7 +104,7 @@ class SentenceBertPreprocessor:
             for combination in itertools.product([self.query], positive_data, negative_data)]
         return triplet_data
 
-    def _prepare_labels(self, labels: list):
+    def prepare_labels(self, labels: list):
         """Binarize Labels if necessray.
         Only Labels that are above 1 are matched. As the preprocessor tries to identify relevant blobs.
 
